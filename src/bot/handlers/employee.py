@@ -6,7 +6,7 @@ from bot.states.employee import EmployeeStates
 from bot.keyboards.employee import get_shift_buttons, get_trading_points
 from database.crud import get_employee_by_id, create_shift, end_shift
 from database.models import SessionLocal, Shift
-from services.airtable import send_to_airtable, upload_to_imgur
+from services.airtable import send_to_airtable, upload_to_yandex_cloud
 from utils.auth import is_registered_employee
 from datetime import datetime
 from PIL import Image
@@ -65,9 +65,7 @@ async def process_photo_start(message: Message, state: FSMContext, bot: Bot):
             await state.clear()
             return
         
-        # Загрузка изображения на Imgur
-        imgur_client_id = "YOUR_IMGUR_CLIENT_ID"  # Замените на ваш Client ID
-        photo_url = upload_to_imgur(compressed_path, imgur_client_id)
+        photo_url = upload_to_yandex_cloud(compressed_path)
         
         shift = create_shift(db, employee.id, data["trading_point"], data["cash_start"], photo_url)
         airtable_data = {
@@ -158,9 +156,7 @@ async def process_photo_end(message: Message, state: FSMContext, bot: Bot):
 
     data = await state.get_data()
     with SessionLocal() as db:
-        # Загрузка изображения на Imgur
-        imgur_client_id = "YOUR_IMGUR_CLIENT_ID"  # Замените на ваш Client ID
-        photo_url = upload_to_imgur(compressed_path, imgur_client_id)
+        photo_url = upload_to_yandex_cloud(compressed_path)
         
         shift = end_shift(
             db, data["shift_id"], data["cash_income"], data["cashless_income"],
