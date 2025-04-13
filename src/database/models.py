@@ -36,6 +36,23 @@ class Shift(Base):
     break_start_at = Column(DateTime)
     total_break_minutes = Column(Integer, default=0)
 
+    # Дополнительные поля для открытия смены (скрин с зелеными галочками)
+    is_light_on = Column(Boolean, default=False)               # Подсветка включена
+    is_camera_on = Column(Boolean, default=False)              # Камера подключена
+    is_display_ok = Column(Boolean, default=False)             # Выкладка в норме
+    is_wet_cleaning_not_required = Column(Boolean, default=False)  # Влажная уборка не требуется
+    open_comment = Column(String)                              # Комментарий при открытии
+
+    # Дополнительные поля для закрытия смены
+    subscriptions = Column(String)      # Подписки
+    loyalty_cards_issued = Column(String)  # Выдано карт лояльности
+    incassation = Column(String)          # Инкассация
+    qr = Column(String)                   # QR
+    delivery = Column(String)             # Доставка
+    online_orders = Column(String)        # Онлайн заказы
+    defect = Column(String)               # Брак
+    close_comment = Column(String)        # Комментарий при закрытии
+
 def init_db():
     engine = create_engine(settings_config.DATABASE_URL)
     Base.metadata.create_all(engine)

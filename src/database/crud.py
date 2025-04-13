@@ -6,7 +6,13 @@ def get_employee_by_id(db: Session, telegram_id: str):
     return db.query(Employee).filter(Employee.telegram_id == telegram_id).first()
 
 def create_employee(db: Session, telegram_id: str, username: str, full_name: str, role: str, trading_point: str):
-    employee = Employee(telegram_id=telegram_id, username=username, full_name=full_name, role=role, trading_point=trading_point)
+    employee = Employee(
+        telegram_id=telegram_id, 
+        username=username, 
+        full_name=full_name, 
+        role=role, 
+        trading_point=trading_point
+    )
     db.add(employee)
     db.commit()
     db.refresh(employee)
@@ -21,14 +27,53 @@ def fire_employee(db: Session, telegram_id: str):
         return employee
     return None
 
-def create_shift(db: Session, employee_id: int, trading_point: str, cash_start: int, photo_url: str):
-    shift = Shift(employee_id=employee_id, start_time=datetime.utcnow(), trading_point=trading_point, cash_start=cash_start, photo_url_start=photo_url)
+def create_shift(
+    db: Session, 
+    employee_id: int, 
+    trading_point: str, 
+    cash_start: int, 
+    photo_url: str,
+    is_light_on: bool,
+    is_camera_on: bool,
+    is_display_ok: bool,
+    is_wet_cleaning_not_required: bool,
+    open_comment: str
+):
+    shift = Shift(
+        employee_id=employee_id,
+        start_time=datetime.utcnow(),
+        trading_point=trading_point,
+        cash_start=cash_start,
+        photo_url_start=photo_url,
+        is_light_on=is_light_on,
+        is_camera_on=is_camera_on,
+        is_display_ok=is_display_ok,
+        is_wet_cleaning_not_required=is_wet_cleaning_not_required,
+        open_comment=open_comment
+    )
     db.add(shift)
     db.commit()
     db.refresh(shift)
     return shift
 
-def end_shift(db: Session, shift_id: int, cash_income: int, cashless_income: int, total: int, expenses: str, balance: int, photo_url: str):
+def end_shift(
+    db: Session, 
+    shift_id: int, 
+    cash_income: int, 
+    cashless_income: int, 
+    total: int, 
+    expenses: str, 
+    balance: int, 
+    photo_url: str,
+    subscriptions: str,
+    loyalty_cards_issued: str,
+    incassation: str,
+    qr: str,
+    delivery: str,
+    online_orders: str,
+    defect: str,
+    close_comment: str
+):
     shift = db.query(Shift).filter(Shift.id == shift_id).first()
     if shift:
         shift.end_time = datetime.utcnow()
@@ -38,6 +83,15 @@ def end_shift(db: Session, shift_id: int, cash_income: int, cashless_income: int
         shift.expenses = expenses
         shift.balance = balance
         shift.photo_url_end = photo_url
+        shift.subscriptions = subscriptions
+        shift.loyalty_cards_issued = loyalty_cards_issued
+        shift.incassation = incassation
+        shift.qr = qr
+        shift.delivery = delivery
+        shift.online_orders = online_orders
+        shift.defect = defect
+        shift.close_comment = close_comment
+
         db.commit()
         return shift
     return None

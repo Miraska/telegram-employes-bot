@@ -17,3 +17,11 @@ def get_trading_points():
         ],
         resize_keyboard=True
     )
+
+def yes_no_keyboard():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Да"), KeyboardButton(text="Нет")]
+        ],
+        resize_keyboard=True
+    )
