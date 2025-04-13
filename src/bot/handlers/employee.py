@@ -7,7 +7,7 @@ from bot.keyboards.employee import get_shift_buttons, get_trading_points
 from database.crud import get_employee_by_id, create_shift, end_shift
 from database.models import SessionLocal, Shift
 from services.airtable import send_to_airtable, upload_to_yandex_cloud
-from utils.auth import is_registered_employee
+from utils.auth import is_admin, is_registered_employee
 from datetime import datetime
 from PIL import Image
 import os
