@@ -1,9 +1,9 @@
+import json
+import logging
 from datetime import date
 import requests
-import logging
-from config.settings import settings_config
 import boto3
-
+from config.settings import settings_config
 
 logger = logging.getLogger(__name__)
 
@@ -34,26 +34,32 @@ def upload_to_yandex_cloud(photo_path: str) -> str:
 
 
 def send_to_airtable(action: str, data: dict, photo_path: str = None):
-    payload = {"action": action, **data}
-    headers = {"Content-Type": "application/json"}
+    """
+    Отправляет данные в Airtable, упаковывая все поля в одну строку JSON.
+    В самой Airtable это будет одним большим текстовым полем,
+    которое можно обратно распарсить как JSON.
+    """
+    # Собираем в один словарь все исходные данные
+    combined_data = {"action": action, **data}
 
+    # Если есть фото, добавляем URL к combined_data
     if photo_path:
         photo_url = upload_to_yandex_cloud(photo_path)
-        payload["photo_url"] = photo_url
-        try:
-            response = requests.post(settings_config.AIRTABLE_WEBHOOK, json=payload, headers=headers)
-            response.raise_for_status()
-            logger.info(f"Data sent to Airtable: {action}")
-            return True
-        except Exception as e:
-            logger.error(f"Error sending to Airtable: {e}", exc_info=True)
-            return False
-    else:
-        try:
-            response = requests.post(settings_config.AIRTABLE_WEBHOOK, json=payload, headers=headers)
-            response.raise_for_status()
-            logger.info(f"Data sent to Airtable: {action}")
-            return True
-        except Exception as e:
-            logger.error(f"Error sending to Airtable: {e}", exc_info=True)
-            return False
+        combined_data["photo_url"] = photo_url
+
+    # Оборачиваем наш словарь в один JSON-объект, 
+    # который будет отправлен в виде одного текстового поля all_data
+    payload = {
+        "all_data": json.dumps(combined_data, ensure_ascii=False)
+    }
+
+    headers = {"Content-Type": "application/json"}
+
+    try:
+        response = requests.post(settings_config.AIRTABLE_WEBHOOK, json=payload, headers=headers)
+        response.raise_for_status()
+        logger.info(f"Data sent to Airtable in single JSON field. Action: {action}")
+        return True
+    except Exception as e:
+        logger.error(f"Error sending to Airtable: {e}", exc_info=True)
+        return False
