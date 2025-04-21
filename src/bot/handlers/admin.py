@@ -64,7 +64,7 @@ async def get_fio(message: Message, state: FSMContext):
             "username": employee.username,
             "full_name": employee.full_name,
             "role": employee.role,
-            "hired_at": employee.hired_at.isoformat()
+            "hired_at": employee.hired_at
         }
         send_to_airtable("hire", airtable_data)
     await message.answer(f"Сотрудник {employee.full_name} нанят как {employee.role}!")
@@ -87,7 +87,7 @@ async def fire_employee_handler(message: Message, state: FSMContext):
                 "telegram_id": employee.telegram_id,
                 "username": employee.username,
                 "full_name": employee.full_name,
-                "fired_at": employee.fired_at.isoformat()
+                "fired_at": employee.fired_at
             }
             send_to_airtable("fire", airtable_data)
             await message.answer(f"Сотрудник {employee.full_name} уволен.")
