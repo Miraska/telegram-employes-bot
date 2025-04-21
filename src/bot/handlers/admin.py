@@ -47,18 +47,36 @@ async def get_id(message: Message, state: FSMContext):
 async def get_fio(message: Message, state: FSMContext):
     full_name = message.text.strip()
     if full_name.startswith('/'):
-        await message.answer("Пожалуйста, введите корректное ФИО сотрудника, а не команду.")
+        await message.answer("Пожалуйста, введите корректное ФИО сотрудника.")
         return
+    
     data = await state.get_data()
+    telegram_id = data.get("telegram_id")
+    
     with SessionLocal() as db:
+        # Сначала проверяем и удаляем существующего сотрудника
+        existing_employee = fire_employee(db, telegram_id)
+        if existing_employee:
+            # Отправляем данные об увольнении в Airtable
+            airtable_data = {
+                "telegram_id": existing_employee.telegram_id,
+                "username": existing_employee.username,
+                "full_name": existing_employee.full_name,
+                "fired_at": existing_employee.fired_at
+            }
+            send_to_airtable("fire", airtable_data)
+        
+        # Создаем нового сотрудника
         employee = create_employee(
             db=db,
-            telegram_id=data.get("telegram_id"),
-            username=data.get("username"),  # Здесь будет None
+            telegram_id=telegram_id,
+            username=data.get("username"),
             full_name=full_name,
             role=data["role"],
-            trading_point="Патриарши"  # Значение по умолчанию для примера
+            trading_point="Патриарши"
         )
+        
+        # Отправляем данные о найме в Airtable
         airtable_data = {
             "telegram_id": employee.telegram_id,
             "username": employee.username,
@@ -67,6 +85,7 @@ async def get_fio(message: Message, state: FSMContext):
             "hired_at": employee.hired_at
         }
         send_to_airtable("hire", airtable_data)
+    
     await message.answer(f"Сотрудник {employee.full_name} нанят как {employee.role}!")
     await state.clear()
 
