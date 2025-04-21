@@ -47,7 +47,7 @@ async def get_id(message: Message, state: FSMContext):
 async def get_fio(message: Message, state: FSMContext):
     full_name = message.text.strip()
     if full_name.startswith('/'):
-        await message.answer("Пожалуйста, введите корректное ФИО сотрудника.")
+        await message.answer("Пожалуйста, введите корректное ФИО сотрудника, а не команду.")
         return
     
     data = await state.get_data()
@@ -62,7 +62,7 @@ async def get_fio(message: Message, state: FSMContext):
                 "telegram_id": existing_employee.telegram_id,
                 "username": existing_employee.username,
                 "full_name": existing_employee.full_name,
-                "fired_at": existing_employee.fired_at
+                "fired_at": existing_employee.fired_at.isoformat() if existing_employee.fired_at else None
             }
             send_to_airtable("fire", airtable_data)
         
@@ -82,7 +82,7 @@ async def get_fio(message: Message, state: FSMContext):
             "username": employee.username,
             "full_name": employee.full_name,
             "role": employee.role,
-            "hired_at": employee.hired_at
+            "hired_at": employee.hired_at.isoformat() if employee.hired_at else None
         }
         send_to_airtable("hire", airtable_data)
     
@@ -106,7 +106,7 @@ async def fire_employee_handler(message: Message, state: FSMContext):
                 "telegram_id": employee.telegram_id,
                 "username": employee.username,
                 "full_name": employee.full_name,
-                "fired_at": employee.fired_at
+                "fired_at": employee.fired_at.isoformat() if employee.fired_at else None
             }
             send_to_airtable("fire", airtable_data)
             await message.answer(f"Сотрудник {employee.full_name} уволен.")
