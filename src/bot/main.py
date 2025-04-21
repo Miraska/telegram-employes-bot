@@ -15,6 +15,9 @@ async def main():
     bot = Bot(token=settings_config.BOT_TOKEN, parse_mode="HTML")
     dp = Dispatcher()
 
+    print(settings_config.BOT_TOKEN)
+    print(settings_config.ADMIN_USERNAMES)
+
     dp.include_router(common.router)
     dp.include_router(admin.router)
     dp.include_router(employee.router)

@@ -19,10 +19,11 @@ async def start_hire(message: Message, state: FSMContext):
     await message.answer("Выберите роль:", reply_markup=get_roles_menu())
     await state.set_state(AdminStates.choosing_role)
 
-@router.message(F.text.in_(["Обычный менеджер", "Старший менеджер"]))
+@router.message(F.text.in_(["Обычный сотрудник", "Старший сотрудник"]))
 async def choose_role(message: Message, state: FSMContext):
     role_text = message.text
-    role = "manager" if role_text == "Обычный менеджер" else "senior_manager"
+    role = "manager" if role_text == "Обычный сотрудник" else "senior_manager"
+    print("Роль: ", role)
     await state.update_data(role=role)
     await message.answer("Введите числовой Telegram ID (без символа @):")
     await state.set_state(AdminStates.getting_id)

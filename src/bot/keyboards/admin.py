@@ -12,8 +12,8 @@ def get_admin_menu():
 def get_roles_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Обычный менеджер")],
-            [KeyboardButton(text="Старший менеджер")]
+            [KeyboardButton(text="Обычный сотрудник")],
+            [KeyboardButton(text="Старший сотрудник")]
         ],
         resize_keyboard=True
     )

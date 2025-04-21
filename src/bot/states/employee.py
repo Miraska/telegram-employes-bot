@@ -31,3 +31,12 @@ class EmployeeStates(StatesGroup):
     waiting_for_close_comment = State()
 
     waiting_for_photo_end = State()
+
+
+    # Провести проверку – дополнительные поля
+    waiting_for_cleaning = State()
+    waiting_for_opening_time = State()
+    waiting_for_layout_afternoon = State()
+    waiting_for_layout_evening = State()
+    waiting_for_waste_time = State()
+    waiting_for_uniform = State()

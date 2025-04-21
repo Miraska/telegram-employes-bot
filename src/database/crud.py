@@ -1,9 +1,35 @@
 from sqlalchemy.orm import Session
-from .models import Employee, Shift
+from .models import Employee, Shift, Check
 from datetime import datetime
 
 def get_employee_by_id(db: Session, telegram_id: str):
     return db.query(Employee).filter(Employee.telegram_id == telegram_id).first()
+
+def create_check(
+    db: Session, 
+    employee_id: int, 
+    trading_point: str, 
+    cleaning: str, 
+    opening: str,
+    layout_afternoon: str,
+    layout_evening: str,
+    waste_time: str,
+    uniform: bool
+):
+    check = Check(
+        employee_id=employee_id,
+        trading_point=trading_point,
+        cleaning=cleaning,
+        opening=opening,
+        layout_afternoon=layout_afternoon,
+        layout_evening=layout_evening,
+        waste_time=waste_time,
+        uniform=uniform,
+    )
+    db.add(check)
+    db.commit()
+    db.refresh(check)
+    return check
 
 def create_employee(db: Session, telegram_id: str, username: str, full_name: str, role: str, trading_point: str):
     employee = Employee(
@@ -18,11 +44,19 @@ def create_employee(db: Session, telegram_id: str, username: str, full_name: str
     db.refresh(employee)
     return employee
 
+def delete_employee(db: Session, telegram_id: str):
+    employee = get_employee_by_id(db, telegram_id)
+    if employee:
+        db.delete(employee)
+        db.commit()
+        return True
+    return False
+
+
 def fire_employee(db: Session, telegram_id: str):
     employee = get_employee_by_id(db, telegram_id)
     if employee:
-        employee.is_active = False
-        employee.fired_at = datetime.utcnow()
+        delete_employee(db, telegram_id)
         db.commit()
         return employee
     return None

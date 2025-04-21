@@ -3,11 +3,11 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from bot.states.employee import EmployeeStates
-from bot.keyboards.employee import get_shift_buttons, get_trading_points, yes_no_keyboard
-from database.crud import get_employee_by_id, create_shift, end_shift
+from bot.keyboards.employee import get_shift_buttons, get_trading_points, yes_no_keyboard, get_cleaning_buttons, layout_keyboard, opening_time_keyboard, waste_time_keyboard
+from database.crud import create_check, get_employee_by_id, create_shift, end_shift
 from database.models import SessionLocal, Shift
 from services.airtable import send_to_airtable, upload_to_yandex_cloud
-from utils.auth import is_admin, is_registered_employee
+from utils.auth import is_admin, is_registered_employee, get_registered_employee
 from datetime import datetime
 from PIL import Image
 import os
@@ -23,6 +23,9 @@ def compress_image(input_path: str, output_path: str, max_size=(800, 800), quali
 async def start_shift(message: Message, state: FSMContext):
     if not is_registered_employee(message):
         await message.answer("Вы не зарегистрированы. Обратитесь к администратору.")
+        return
+    elif get_registered_employee(message).role == "senior_manager":
+        await message.answer("Вы не можете начать смену, так как вы являетесь старшим сотрудником.")
         return
     await message.answer("Выберите торговую точку:", reply_markup=get_trading_points())
     await state.set_state(EmployeeStates.waiting_for_trading_point)
@@ -138,6 +141,10 @@ async def end_shift_cmd(message: Message, state: FSMContext):
     if not is_registered_employee(message):
         await message.answer("Вы не зарегистрированы.")
         return
+    elif get_registered_employee(message).role == "senior_manager":
+        await message.answer("Вы не можете начать смену, так как вы являетесь старшим сотрудником.")
+        return
+    
     with SessionLocal() as db:
         employee = get_employee_by_id(db, str(message.from_user.id))
         shift = db.query(Shift).filter(Shift.employee_id == employee.id, Shift.end_time == None).first()
@@ -349,3 +356,101 @@ async def break_end(message: Message):
         }
         send_to_airtable("break", airtable_data)
         await message.answer(f"Перерыв окончен. Длительность: {break_duration} мин.")
+
+
+# Начло првоерки, чистота, выкладка и т.д.
+
+# Чистота
+@router.message(Command("perform_check"))
+async def perform_check(message: Message, state: FSMContext):
+    if not is_registered_employee(message) and not get_registered_employee(message).role == "senior_manager":
+        await message.answer("Вы не зарегистрированы как старший сотрудник.")
+        return
+    
+    await message.answer("Чистота:", reply_markup=get_cleaning_buttons())
+    await state.set_state(EmployeeStates.waiting_for_cleaning)
+
+
+# Время открытия
+@router.message(EmployeeStates.waiting_for_cleaning, F.text.in_(["Чисто", "Требовалась уборка", "Грязно"]))
+async def process_cleaning(message: Message, state: FSMContext):
+    cleaning_status = message.text
+    await state.update_data(cleaning=cleaning_status)
+    await message.answer("Введите время открытия:", reply_markup=opening_time_keyboard())
+    await state.set_state(EmployeeStates.waiting_for_opening_time)
+
+
+@router.message(EmployeeStates.waiting_for_opening_time, F.text.in_(["Раньше", "Воворемя", "Позже"]))
+async def process_opening_time(message: Message, state: FSMContext):
+    opening_time_status = message.text
+    await state.update_data(opening_time=opening_time_status)
+    await message.answer("Выкладка днем:", reply_markup=layout_keyboard())
+    await state.set_state(EmployeeStates.waiting_for_layout_afternoon)
+
+@router.message(EmployeeStates.waiting_for_layout_afternoon, F.text.in_(["Правильная выкладка", "Мелкие исправления", "Переделка в выкладке"]))
+async def process_layout_afternoon(message: Message, state: FSMContext):
+    layout_status = message.text
+    await state.update_data(layout_afternoon=layout_status)
+    await message.answer("Выкладка вечером:", reply_markup=layout_keyboard())
+    await state.set_state(EmployeeStates.waiting_for_layout_evening)
+
+@router.message(EmployeeStates.waiting_for_layout_evening, F.text.in_(["Правильная выкладка", "Мелкие исправления", "Переделка в выкладке"]))
+async def process_layout_evening(message: Message, state: FSMContext):
+    layout_status = message.text
+    await state.update_data(layout_evening=layout_status)
+    await message.answer("Время отходов", reply_markup=waste_time_keyboard())
+    await state.set_state(EmployeeStates.waiting_for_waste_time)
+
+@router.message(EmployeeStates.waiting_for_waste_time, F.text.in_(["Соблюдено", "Не соблюдено", "Фактически не превышено"]))
+async def process_waste_time(message: Message, state: FSMContext):
+    waste_status = message.text
+    await state.update_data(waste_time=waste_status)
+    await message.answer("Форма сотрудников в порядке?", reply_markup=yes_no_keyboard())
+    await state.set_state(EmployeeStates.waiting_for_uniform)
+
+@router.message(EmployeeStates.waiting_for_uniform, F.text.in_(["Да", "Нет"]))
+async def process_uniform(message: Message, state: FSMContext):
+    uniform_status = message.text
+
+    if uniform_status == "Да":
+        uniform_status = True
+    else:
+        uniform_status = False
+
+    data = await state.get_data()
+
+    with SessionLocal() as db:
+        employee = get_employee_by_id(db, str(message.from_user.id))
+        if employee is None:
+            await message.answer("Сотрудник не найден. Вы не зарегистрированы для работы со сменами.")
+            await state.clear()
+            return
+        
+        check = create_check(
+            db,
+            employee_id=employee.id,
+            trading_point=employee.trading_point,
+            cleaning=data["cleaning"],
+            opening=data["opening_time"],
+            layout_afternoon=data["layout_afternoon"],
+            layout_evening=data["layout_evening"],
+            waste_time=data["waste_time"],
+            uniform=uniform_status
+        )
+    
+        airtable_data = {
+            'cleaning': data.get('cleaning'),
+            'opening_time': data.get('opening_time'),
+            'layout_afternoon': data.get('layout_afternoon'),
+            'layout_evening': data.get('layout_evening'),
+            'waste_time': data.get('waste_time'),
+            'uniform': uniform_status
+        }
+
+        send_to_airtable("perform_check", airtable_data)
+    
+    
+    
+    await message.answer("Проверка завершена. Данные сохранены и отпарвлены в airtable.")
+    await state.set_state(None)
+    await state.clear()

@@ -18,6 +18,21 @@ class Employee(Base):
     hired_at = Column(DateTime, default=datetime.utcnow)
     fired_at = Column(DateTime)
 
+class Check(Base):
+    __tablename__ = 'checks'
+    id = Column(Integer, primary_key=True)
+    employee_id = Column(Integer, ForeignKey('employees.id'))
+    trading_point = Column(String, nullable=False)
+    cleaning = Column(String, nullable=False)
+    opening = Column(String, nullable=False)
+    layout_afternoon = Column(String, nullable=False)
+    layout_evening = Column(String, nullable=False)
+    waste_time = Column(String, nullable=False)
+    uniform = Column(Boolean, default=False)
+
+
+
+
 class Shift(Base):
     __tablename__ = 'shifts'
     id = Column(Integer, primary_key=True)

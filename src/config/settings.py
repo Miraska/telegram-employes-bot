@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 class Settings:
     BOT_TOKEN: str = os.getenv("BOT_TOKEN")
