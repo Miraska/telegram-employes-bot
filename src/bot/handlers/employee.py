@@ -363,9 +363,14 @@ async def break_end(message: Message):
 # Чистота
 @router.message(Command("perform_check"))
 async def perform_check(message: Message, state: FSMContext):
-    if not is_registered_employee(message) and not get_registered_employee(message).role == "senior_manager":
+    if not is_registered_employee(message):
         await message.answer("Вы не зарегистрированы как старший сотрудник.")
         return
+
+    elif not get_registered_employee(message).role == "senior_manager":
+        await message.answer("Вы не зарегистрированы как старший сотрудник.")
+        return
+    
     
     await message.answer("Чистота:", reply_markup=get_cleaning_buttons())
     await state.set_state(EmployeeStates.waiting_for_cleaning)
