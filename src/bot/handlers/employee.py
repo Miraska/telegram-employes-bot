@@ -33,7 +33,7 @@ async def start_shift(message: Message, state: FSMContext):
     await message.answer("Выберите торговую точку:", reply_markup=get_trading_points())
     await state.set_state(EmployeeStates.waiting_for_trading_point)
 
-@router.message(F.text.in_(["Патриарши", "Торговая точка 1", "Торговая точка 2"]))
+@router.message(EmployeeStates.waiting_for_trading_point, F.text.in_(["Патриарши", "Торговая точка 1", "Торговая точка 2"]))
 async def process_trading_point(message: Message, state: FSMContext):
     trading_point = message.text
     await state.update_data(trading_point=trading_point)
