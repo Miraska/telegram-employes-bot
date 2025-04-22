@@ -34,6 +34,7 @@ class EmployeeStates(StatesGroup):
 
 
     # Провести проверку – дополнительные поля
+    waiting_for_trading_point_perform_check = State()
     waiting_for_cleaning = State()
     waiting_for_opening_time = State()
     waiting_for_layout_afternoon = State()

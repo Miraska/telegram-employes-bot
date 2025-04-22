@@ -23,7 +23,7 @@ def compress_image(input_path: str, output_path: str, max_size=(800, 800), quali
 async def start_shift(message: Message, state: FSMContext):
     await state.set_state(None)
     await state.clear()
-    
+
     if not is_registered_employee(message):
         await message.answer("Вы не зарегистрированы. Обратитесь к администратору.")
         return
@@ -383,12 +383,12 @@ async def perform_check(message: Message, state: FSMContext):
         return
     
     await message.answer("Торговая точка:", reply_markup=get_trading_points())
-    await state.set_state(EmployeeStates.waiting_for_trading_point)
+    await state.set_state(EmployeeStates.waiting_for_trading_point_perform_check)
     
 
 
 
-@router.message(EmployeeStates.waiting_for_trading_point)
+@router.message(EmployeeStates.waiting_for_trading_point_perform_check)
 async def process_cleaning(message: Message, state: FSMContext):
     trading_status = message.text
     await state.update_data(trading_point=trading_status)
