@@ -453,7 +453,7 @@ async def process_uniform(message: Message, state: FSMContext):
         
         check = create_check(
             db,
-            employee_id=employee.id,
+            employee_id=message.from_user.id,
             trading_point=data['trading_point'],
             cleaning=data["cleaning"],
             opening=data["opening_time"],
@@ -464,7 +464,7 @@ async def process_uniform(message: Message, state: FSMContext):
         )
     
         airtable_data = {
-            'employee_id': employee.id,
+            'employee_id': message.from_user.id,
             'trading_point': data.get('trading_point'),
             'cleaning': data.get('cleaning'),
             'opening_time': data.get('opening_time'),
