@@ -388,8 +388,8 @@ async def perform_check(message: Message, state: FSMContext):
 
 
 
-@router.message(EmployeeStates.waiting_for_trading_point_perform_check)
-async def process_cleaning(message: Message, state: FSMContext):
+@router.message(EmployeeStates.waiting_for_trading_point_perform_check, F.text.in_(["Патриарши", "Торговая точка 1", "Торговая точка 2"]))
+async def process_trading_perform_check(message: Message, state: FSMContext):
     trading_status = message.text
     await state.update_data(trading_point=trading_status)
     await message.answer("Чистота:", reply_markup=get_cleaning_buttons())
