@@ -21,6 +21,9 @@ def compress_image(input_path: str, output_path: str, max_size=(800, 800), quali
 
 @router.message(Command("start_shift"))
 async def start_shift(message: Message, state: FSMContext):
+    await state.set_state(None)
+    await state.clear()
+    
     if not is_registered_employee(message):
         await message.answer("Вы не зарегистрированы. Обратитесь к администратору.")
         return
@@ -135,9 +138,13 @@ async def process_photo_start(message: Message, state: FSMContext, bot: Bot):
     await message.answer("Смена начата! Используйте кнопки для перерывов.", reply_markup=get_shift_buttons())
     await state.update_data(shift_id=shift.id)
     await state.set_state(None)
+    await state.clear()
 
 @router.message(Command("end_shift"))
 async def end_shift_cmd(message: Message, state: FSMContext):
+    await state.set_state(None)
+    await state.clear()
+
     if not is_registered_employee(message):
         await message.answer("Вы не зарегистрированы.")
         return
@@ -314,6 +321,7 @@ async def process_photo_end(message: Message, state: FSMContext, bot: Bot):
         send_to_airtable("shift_end", airtable_data, compressed_path)
     os.remove(compressed_path)
     await message.answer("Смена завершена!")
+    await state.set_state(None)
     await state.clear()
 
 @router.message(F.text.in_(["Отошел", "отошел"]))
@@ -363,6 +371,9 @@ async def break_end(message: Message):
 # Чистота
 @router.message(Command("perform_check"))
 async def perform_check(message: Message, state: FSMContext):
+    await state.set_state(None)
+    await state.clear()
+
     if not is_registered_employee(message):
         await message.answer("Вы не зарегистрированы как старший сотрудник.")
         return
@@ -371,7 +382,16 @@ async def perform_check(message: Message, state: FSMContext):
         await message.answer("Вы не зарегистрированы как старший сотрудник.")
         return
     
+    await message.answer("Торговая точка:", reply_markup=get_trading_points())
+    await state.set_state(EmployeeStates.waiting_for_trading_point)
     
+
+
+
+@router.message(EmployeeStates.waiting_for_trading_point)
+async def process_cleaning(message: Message, state: FSMContext):
+    trading_status = message.text
+    await state.update_data(trading_point=trading_status)
     await message.answer("Чистота:", reply_markup=get_cleaning_buttons())
     await state.set_state(EmployeeStates.waiting_for_cleaning)
 
@@ -385,7 +405,7 @@ async def process_cleaning(message: Message, state: FSMContext):
     await state.set_state(EmployeeStates.waiting_for_opening_time)
 
 
-@router.message(EmployeeStates.waiting_for_opening_time, F.text.in_(["Раньше", "Воворемя", "Позже"]))
+@router.message(EmployeeStates.waiting_for_opening_time, F.text.in_(["Раньше", "Вовремя", "Позже"]))
 async def process_opening_time(message: Message, state: FSMContext):
     opening_time_status = message.text
     await state.update_data(opening_time=opening_time_status)
@@ -434,7 +454,7 @@ async def process_uniform(message: Message, state: FSMContext):
         check = create_check(
             db,
             employee_id=employee.id,
-            trading_point=employee.trading_point,
+            trading_point=data['trading_point'],
             cleaning=data["cleaning"],
             opening=data["opening_time"],
             layout_afternoon=data["layout_afternoon"],
@@ -444,6 +464,8 @@ async def process_uniform(message: Message, state: FSMContext):
         )
     
         airtable_data = {
+            'employee_id': employee.id,
+            'trading_point': data.get('trading_point'),
             'cleaning': data.get('cleaning'),
             'opening_time': data.get('opening_time'),
             'layout_afternoon': data.get('layout_afternoon'),
