@@ -32,7 +32,6 @@ class EmployeeStates(StatesGroup):
 
     waiting_for_photo_end = State()
 
-
     # Провести проверку – дополнительные поля
     waiting_for_trading_point_perform_check = State()
     waiting_for_cleaning = State()

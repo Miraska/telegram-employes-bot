@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router, F, types
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from bot.states.admin import AdminStates
@@ -12,21 +12,20 @@ router = Router()
 
 @router.message(F.text == "Нанять сотрудника")
 async def start_hire(message: Message, state: FSMContext):
-    print("start_hire")
     if not is_admin(message):
         await message.answer("Доступ запрещён.")
         return
     await message.answer("Выберите роль:", reply_markup=get_roles_menu())
     await state.set_state(AdminStates.choosing_role)
 
-@router.message(F.text.in_(["Обычный сотрудник", "Старший сотрудник"]))
-async def choose_role(message: Message, state: FSMContext):
-    role_text = message.text
+@router.callback_query(F.data.startswith("role:"))
+async def choose_role(callback_query: types.CallbackQuery, state: FSMContext):
+    role_text = callback_query.data.split(":")[1]
     role = "manager" if role_text == "Обычный сотрудник" else "senior_manager"
-    print("Роль: ", role)
-    await state.update_data(role=role)
-    await message.answer("Введите числовой Telegram ID (без символа @):")
+    await state.update_data(role=role, state_stack=[AdminStates.choosing_role])
+    await callback_query.message.edit_text("Введите числовой Telegram ID (без символа @):")
     await state.set_state(AdminStates.getting_id)
+    await callback_query.answer()
 
 @router.message(AdminStates.getting_id)
 async def get_id(message: Message, state: FSMContext):
@@ -42,7 +41,6 @@ async def get_id(message: Message, state: FSMContext):
     await message.answer("Введите ФИО сотрудника:")
     await state.set_state(AdminStates.getting_fio)
 
-
 @router.message(AdminStates.getting_fio)
 async def get_fio(message: Message, state: FSMContext):
     full_name = message.text.strip()
@@ -54,10 +52,8 @@ async def get_fio(message: Message, state: FSMContext):
     telegram_id = data.get("telegram_id")
     
     with SessionLocal() as db:
-        # Сначала проверяем и удаляем существующего сотрудника
         existing_employee = fire_employee(db, telegram_id)
         if existing_employee:
-            # Отправляем данные об увольнении в Airtable
             airtable_data = {
                 "telegram_id": existing_employee.telegram_id,
                 "username": existing_employee.username,
@@ -66,7 +62,6 @@ async def get_fio(message: Message, state: FSMContext):
             }
             send_to_airtable("fire", airtable_data)
         
-        # Создаем нового сотрудника
         employee = create_employee(
             db=db,
             telegram_id=telegram_id,
@@ -76,7 +71,6 @@ async def get_fio(message: Message, state: FSMContext):
             trading_point="Патриарши"
         )
         
-        # Отправляем данные о найме в Airtable
         airtable_data = {
             "telegram_id": employee.telegram_id,
             "username": employee.username,
@@ -113,3 +107,17 @@ async def fire_employee_handler(message: Message, state: FSMContext):
         else:
             await message.answer("Сотрудник не найден.")
     await state.clear()
+
+@router.callback_query(F.data == "back")
+async def process_back(callback_query: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    state_stack = data.get("state_stack", [])
+    if state_stack:
+        previous_state = state_stack.pop()
+        await state.update_data(state_stack=state_stack)
+        await state.set_state(previous_state)
+        if previous_state == AdminStates.choosing_role:
+            await callback_query.message.edit_text("Выберите роль:", reply_markup=get_roles_menu())
+    else:
+        await callback_query.message.edit_text("Нет предыдущего шага.")
+    await callback_query.answer()

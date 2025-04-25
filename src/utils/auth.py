@@ -9,7 +9,7 @@ def is_admin(message: Message) -> bool:
 def is_registered_employee(message: Message) -> bool:
     with SessionLocal() as db:
         employee = get_employee_by_id(db, str(message.from_user.id))
-        return employee is not None and employee.is_active
+        return employee is not None
     
 def get_registered_employee(message: Message) -> Employee:
     with SessionLocal() as db:
