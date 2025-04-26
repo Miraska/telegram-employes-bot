@@ -68,6 +68,9 @@ class Shift(Base):
     defect = Column(String)               # Брак
     close_comment = Column(String)        # Комментарий при закрытии
 
+
+    break_message_id = Column(Integer)
+
 def init_db():
     engine = create_engine(settings_config.DATABASE_URL)
     Base.metadata.create_all(engine)

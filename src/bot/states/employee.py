@@ -20,7 +20,7 @@ class EmployeeStates(StatesGroup):
     waiting_for_expenses = State()
     waiting_for_balance = State()
 
-    # Закрытие смены – дополнительные поля
+    # Закрытие смены
     waiting_for_subscriptions = State()
     waiting_for_loyalty_cards_issued = State()
     waiting_for_incassation = State()
@@ -32,7 +32,7 @@ class EmployeeStates(StatesGroup):
 
     waiting_for_photo_end = State()
 
-    # Провести проверку – дополнительные поля
+    # Провести проверку
     waiting_for_trading_point_perform_check = State()
     waiting_for_cleaning = State()
     waiting_for_opening_time = State()

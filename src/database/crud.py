@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 from .models import Employee, Shift, Check
 from datetime import datetime
 
-def get_employee_by_id(db: Session, telegram_id: str):
-    return db.query(Employee).filter(Employee.telegram_id == telegram_id).first()
+def get_employee_by_id(db: Session, telegram_id: int):
+    return db.query(Employee).filter(Employee.telegram_id == int(telegram_id)).first()
 
 def create_check(
     db: Session, 
