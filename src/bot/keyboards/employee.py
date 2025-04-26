@@ -27,7 +27,10 @@ def get_shift_buttons() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="Отошел", callback_data="shift:Отошел"),
-            InlineKeyboardButton(text="Пришел", callback_data="shift:Пришел"),
+            InlineKeyboardButton(text="Пришел", callback_data="shift:Пришел")
+        ],
+        [
+            InlineKeyboardButton(text="Завершить смену", callback_data="action:end_shift")
         ]
     ])
 

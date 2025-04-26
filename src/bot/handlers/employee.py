@@ -152,7 +152,7 @@ async def process_photo_start(message: Message, state: FSMContext, bot: Bot):
             "cash_start": shift.cash_start,
             "start_time": shift.start_time.isoformat(),
             "photo_url": url,
-            "message": shift.open_comment,
+            "open_comment": shift.open_comment,
         })
     os.remove(comp)
     await state.update_data(shift_id=shift.id)
@@ -235,20 +235,10 @@ async def process_cash_income(message: Message, state: FSMContext):
         await message.answer("Введите корректное число.")
 
 @router.message(EmployeeStates.waiting_for_cashless_income)
-async def process_cashless_income(message: Message, state: FSMContext):
-    try:
-        cli = int(message.text)
-        await state.update_data(cashless_income=cli)
-        await message.answer("Введите итог:")
-        await state.set_state(EmployeeStates.waiting_for_total)
-    except ValueError:
-        await message.answer("Введите корректное число.")
-
-@router.message(EmployeeStates.waiting_for_total)
 async def process_total(message: Message, state: FSMContext):
     try:
-        total = int(message.text)
-        await state.update_data(total=total)
+        cashless_income = int(message.text)
+        await state.update_data(cashless_income=cashless_income)
         await message.answer("Введите расходы:")
         await state.set_state(EmployeeStates.waiting_for_expenses)
     except ValueError:
@@ -259,16 +249,6 @@ async def process_expenses(message: Message, state: FSMContext):
     try:
         expenses = int(message.text)
         await state.update_data(expenses=expenses)
-        await message.answer("Введите баланс:")
-        await state.set_state(EmployeeStates.waiting_for_balance)
-    except ValueError:
-        await message.answer("Введите корректное число.")
-
-@router.message(EmployeeStates.waiting_for_balance)
-async def process_balance(message: Message, state: FSMContext):
-    try:
-        balance = int(message.text)
-        await state.update_data(balance=balance)
         await message.answer("Введите количество подписок:")
         await state.set_state(EmployeeStates.waiting_for_subscriptions)
     except ValueError:
@@ -364,12 +344,20 @@ async def process_photo_end(message: Message, state: FSMContext, bot: Bot):
     with SessionLocal() as db:
         sh = db.get(Shift, data["shift_id"])
         url = upload_to_yandex_cloud(comp)
+        
+        # Добавляем расчет общего времени перерыва, включая текущий перерыв если он активен
+        total_break_minutes = sh.total_break_minutes
+        
+        # Если перерыв активен на момент закрытия смены, добавляем его длительность
+        if sh.break_start_at:
+            current_break_duration = int((datetime.utcnow() - sh.break_start_at).total_seconds() / 60)
+            total_break_minutes += current_break_duration
+            sh.break_start_at = None
+        
         sh.end_time = datetime.utcnow()
         sh.cash_income = data["cash_income"]
         sh.cashless_income = data["cashless_income"]
-        sh.total = data["total"]
         sh.expenses = data["expenses"]
-        sh.balance = data["balance"]
         sh.subscriptions = data["subscriptions"]
         sh.loyalty_cards_issued = data["loyalty_cards_issued"]
         sh.incassation = data["incassation"]
@@ -379,14 +367,16 @@ async def process_photo_end(message: Message, state: FSMContext, bot: Bot):
         sh.defect = data["defect"]
         sh.close_comment = data["close_comment"]
         sh.photo_url_end = url
+        sh.total_break_minutes = total_break_minutes
+        
         db.commit()
+        
         send_to_airtable("shift_end", {
             "shift_id": sh.id,
+            "employee_id": message.from_user.id,
             "cash_income": sh.cash_income,
             "cashless_income": sh.cashless_income,
-            "total": sh.total,
             "expenses": sh.expenses,
-            "balance": sh.balance,
             "subscriptions": sh.subscriptions,
             "loyalty_cards_issued": sh.loyalty_cards_issued,
             "incassation": sh.incassation,
@@ -397,7 +387,10 @@ async def process_photo_end(message: Message, state: FSMContext, bot: Bot):
             "close_comment": sh.close_comment,
             "end_time": sh.end_time.isoformat(),
             "photo_url_end": url,
+            "total_break_minutes": total_break_minutes,
+            "trading_point": sh.trading_point,
         })
+        
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=sh.break_message_id,
@@ -405,7 +398,7 @@ async def process_photo_end(message: Message, state: FSMContext, bot: Bot):
             reply_markup=None
         )
     os.remove(comp)
-    await message.answer("Смена завершена.")
+    await message.answer(f"Смена завершена. Общее время перерыва: {total_break_minutes} мин.")
     await state.clear()
 
 # Проверка
@@ -503,7 +496,7 @@ async def process_uniform(callback: CallbackQuery, state: FSMContext):
         create_check(
             db,
             employee_id=emp.id,
-            trading_point=data["trading_point"],
+            trading_point=emp.trading_point,
             cleaning=data["cleaning"],
             opening=data["opening_time"],
             layout_afternoon=data["layout_afternoon"],
@@ -513,7 +506,7 @@ async def process_uniform(callback: CallbackQuery, state: FSMContext):
         )
         send_to_airtable("perform_check", {
             "employee_id": emp.telegram_id,
-            "trading_point": data["trading_point"],
+            "trading_point": emp.trading_point,
             "cleaning": data["cleaning"],
             "opening_time": data["opening_time"],
             "layout_afternoon": data["layout_afternoon"],

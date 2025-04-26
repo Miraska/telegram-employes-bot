@@ -16,9 +16,7 @@ class EmployeeStates(StatesGroup):
 
     waiting_for_cash_income = State()
     waiting_for_cashless_income = State()
-    waiting_for_total = State()
     waiting_for_expenses = State()
-    waiting_for_balance = State()
 
     # Закрытие смены
     waiting_for_subscriptions = State()
