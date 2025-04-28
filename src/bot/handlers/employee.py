@@ -7,7 +7,6 @@ from datetime import datetime
 from PIL import Image
 import os
 
-from bot.handlers.common import add_back_button_common
 from bot.states.employee import EmployeeStates
 from bot.keyboards.employee import (
     get_shift_buttons,
@@ -27,180 +26,96 @@ from utils.auth import get_registered_employee
 router = Router()
 
 def compress_image(input_path: str, output_path: str, max_size=(800, 800), quality=70):
+    """Сжать изображение до указанного размера и качества."""
     with Image.open(input_path) as img:
         img.thumbnail(max_size, Image.Resampling.LANCZOS)
         img.save(output_path, format="JPEG", quality=quality)
 
-# Обработчик кнопки "Назад"
 @router.callback_query(F.data == "action:back")
 async def back_button_handler(callback: CallbackQuery, state: FSMContext):
+    """Обработать нажатие кнопки 'Назад' для сотрудника."""
+    current_state = await state.get_state()
     data = await state.get_data()
     previous_state = data.get("previous_state")
-    
-    if previous_state:
-        await state.set_state(previous_state)
-        if previous_state == EmployeeStates.waiting_for_trading_point:
-            await callback.message.edit_text(
-                "Выберите торговую точку:",
-                reply_markup=get_trading_points()
-            )
-        elif previous_state == EmployeeStates.waiting_for_cash_start:
-            await callback.message.edit_text(
-                "Введите сумму наличных на начало дня:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_light_on:
-            await callback.message.edit_text(
-                "Подсветка включена? (Да/Нет)",
-                reply_markup=add_back_button(yes_no_keyboard())
-            )
-        elif previous_state == EmployeeStates.waiting_for_camera_on:
-            await callback.message.edit_text(
-                "Камера подключена? (Да/Нет)",
-                reply_markup=add_back_button(yes_no_keyboard())
-            )
-        elif previous_state == EmployeeStates.waiting_for_display_ok:
-            await callback.message.edit_text(
-                "Выкладка в норме? (Да/Нет)",
-                reply_markup=add_back_button(yes_no_keyboard())
-            )
-        elif previous_state == EmployeeStates.waiting_for_wet_cleaning:
-            await callback.message.edit_text(
-                "Влажная уборка не требуется? (Да/Нет)",
-                reply_markup=add_back_button(yes_no_keyboard())
-            )
-        elif previous_state == EmployeeStates.waiting_for_open_comment:
-            await callback.message.edit_text(
-                "Оставьте комментарий или введите '-' для пропуска:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_photo_start:
-            await callback.message.edit_text(
-                "Отправьте фото начала смены:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_cash_income:
-            await callback.message.edit_text(
-                "Введите приход наличных:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_cashless_income:
-            await callback.message.edit_text(
-                "Введите безналичный доход:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_expenses:
-            await callback.message.edit_text(
-                "Введите расходы:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_subscriptions:
-            await callback.message.edit_text(
-                "Введите количество подписок:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_loyalty_cards_issued:
-            await callback.message.edit_text(
-                "Введите количество выданных карт лояльности:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_incassation:
-            await callback.message.edit_text(
-                "Введите сумму инкассации:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_qr:
-            await callback.message.edit_text(
-                "Введите сумму по QR:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_delivery:
-            await callback.message.edit_text(
-                "Введите сумму доставки:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_online_orders:
-            await callback.message.edit_text(
-                "Введите количество онлайн-заказов:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_defect:
-            await callback.message.edit_text(
-                "Введите сумму брака:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_close_comment:
-            await callback.message.edit_text(
-                "Оставьте комментарий или введите '-' для пропуска:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_photo_end:
-            await callback.message.edit_text(
-                "Отправьте фото конца смены:",
-                reply_markup=add_back_button()
-            )
-        elif previous_state == EmployeeStates.waiting_for_trading_point_perform_check:
-            await callback.message.edit_text(
-                "Торговая точка:",
-                reply_markup=get_trading_points()
-            )
-        elif previous_state == EmployeeStates.waiting_for_cleaning:
-            await callback.message.edit_text(
-                "Чистота:",
-                reply_markup=add_back_button(get_cleaning_buttons())
-            )
-        elif previous_state == EmployeeStates.waiting_for_opening_time:
-            await callback.message.edit_text(
-                "Введите время открытия:",
-                reply_markup=add_back_button(opening_time_keyboard())
-            )
-        elif previous_state == EmployeeStates.waiting_for_layout_afternoon:
-            await callback.message.edit_text(
-                "Выкладка днем:",
-                reply_markup=add_back_button(layout_keyboard())
-            )
-        elif previous_state == EmployeeStates.waiting_for_layout_evening:
-            await callback.message.edit_text(
-                "Выкладка вечером:",
-                reply_markup=add_back_button(layout_keyboard())
-            )
-        elif previous_state == EmployeeStates.waiting_for_waste_time:
-            await callback.message.edit_text(
-                "Время отходов:",
-                reply_markup=add_back_button(waste_time_keyboard())
-            )
-        elif previous_state == EmployeeStates.waiting_for_uniform:
-            await callback.message.edit_text(
-                "Форма сотрудников в порядке?",
-                reply_markup=add_back_button(yes_no_keyboard())
-            )
-        else:
-            await callback.message.edit_text(
-                "Возврат к предыдущему шагу.",
-                reply_markup=add_back_button()
-            )
+
+    if not previous_state or current_state == previous_state:
+        await callback.answer("Вы уже на этом шаге.")
+        return
+
+    await state.set_state(previous_state)
+    if previous_state == EmployeeStates.waiting_for_trading_point:
+        await callback.message.edit_text("Выберите торговую точку:", reply_markup=get_trading_points())
+    elif previous_state == EmployeeStates.waiting_for_cash_start:
+        await callback.message.edit_text("Введите сумму наличных на начало дня:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_light_on:
+        await callback.message.edit_text("Подсветка включена? (Да/Нет)", reply_markup=add_back_button(yes_no_keyboard()))
+    elif previous_state == EmployeeStates.waiting_for_camera_on:
+        await callback.message.edit_text("Камера подключена? (Да/Нет)", reply_markup=add_back_button(yes_no_keyboard()))
+    elif previous_state == EmployeeStates.waiting_for_display_ok:
+        await callback.message.edit_text("Выкладка в норме? (Да/Нет)", reply_markup=add_back_button(yes_no_keyboard()))
+    elif previous_state == EmployeeStates.waiting_for_wet_cleaning:
+        await callback.message.edit_text("Влажная уборка не требуется? (Да/Нет)", reply_markup=add_back_button(yes_no_keyboard()))
+    elif previous_state == EmployeeStates.waiting_for_open_comment:
+        await callback.message.edit_text("Оставьте комментарий или введите '-' для пропуска:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_photo_start:
+        await callback.message.edit_text("Отправьте фото начала смены:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_cash_income:
+        await callback.message.edit_text("Введите приход наличных:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_cashless_income:
+        await callback.message.edit_text("Введите безналичный доход:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_expenses:
+        await callback.message.edit_text("Введите расходы:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_subscriptions:
+        await callback.message.edit_text("Введите количество подписок:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_loyalty_cards_issued:
+        await callback.message.edit_text("Введите количество выданных карт лояльности:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_incassation:
+        await callback.message.edit_text("Введите сумму инкассации:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_qr:
+        await callback.message.edit_text("Введите сумму по QR:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_delivery:
+        await callback.message.edit_text("Введите сумму доставки:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_online_orders:
+        await callback.message.edit_text("Введите количество онлайн-заказов:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_defect:
+        await callback.message.edit_text("Введите сумму брака:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_close_comment:
+        await callback.message.edit_text("Оставьте комментарий или введите '-' для пропуска:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_photo_end:
+        await callback.message.edit_text("Отправьте фото конца смены:", reply_markup=add_back_button())
+    elif previous_state == EmployeeStates.waiting_for_trading_point_perform_check:
+        await callback.message.edit_text("Торговая точка:", reply_markup=get_trading_points())
+    elif previous_state == EmployeeStates.waiting_for_cleaning:
+        await callback.message.edit_text("Чистота:", reply_markup=add_back_button(get_cleaning_buttons()))
+    elif previous_state == EmployeeStates.waiting_for_opening_time:
+        await callback.message.edit_text("Введите время открытия:", reply_markup=add_back_button(opening_time_keyboard()))
+    elif previous_state == EmployeeStates.waiting_for_layout_afternoon:
+        await callback.message.edit_text("Выкладка днем:", reply_markup=add_back_button(layout_keyboard()))
+    elif previous_state == EmployeeStates.waiting_for_layout_evening:
+        await callback.message.edit_text("Выкладка вечером:", reply_markup=add_back_button(layout_keyboard()))
+    elif previous_state == EmployeeStates.waiting_for_waste_time:
+        await callback.message.edit_text("Время отходов:", reply_markup=add_back_button(waste_time_keyboard()))
+    elif previous_state == EmployeeStates.waiting_for_uniform:
+        await callback.message.edit_text("Форма сотрудников в порядке?", reply_markup=add_back_button(yes_no_keyboard()))
     else:
-        await callback.message.edit_text("Нет предыдущего шага.")
-    
+        await callback.message.edit_text("Возврат к предыдущему шагу.", reply_markup=add_back_button())
     await callback.answer()
 
-# Открытие смены
 @router.message(Command("start_shift"))
 async def start_shift(message: Message, state: FSMContext):
+    """Начать смену через команду /start_shift."""
     await state.clear()
     emp = get_registered_employee(message.from_user.id)
     if emp is None:
         return await message.answer("Вы не зарегистрированы. Обратитесь к администратору.")
     if emp.role == "senior_manager":
         return await message.answer("Старшие сотрудники не могут начинать смену.")
-    await message.edit_text("Выберите торговую точку:", reply_markup=add_back_button_common(get_trading_points()))
+    await message.answer("Выберите торговую точку:", reply_markup=get_trading_points())
     await state.set_state(EmployeeStates.waiting_for_trading_point)
-
-
-    
 
 @router.callback_query(F.data == "action:start_shift")
 async def start_shift_button(callback: CallbackQuery, state: FSMContext):
+    """Начать смену через кнопку."""
     with SessionLocal() as db:
         emp = get_employee_by_id(db, callback.from_user.id)
         if emp is None:
@@ -217,84 +132,71 @@ async def start_shift_button(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("trading_point:"), EmployeeStates.waiting_for_trading_point)
 async def process_trading_point(callback: CallbackQuery, state: FSMContext):
+    """Обработать выбор торговой точки для начала смены."""
     tp = callback.data.split(":", 1)[1]
     await state.update_data(trading_point=tp, previous_state=EmployeeStates.waiting_for_trading_point)
-    await callback.message.edit_text(
-        "Введите сумму наличных на начало дня:",
-        reply_markup=add_back_button()
-    )
+    await callback.message.edit_text("Введите сумму наличных на начало дня:", reply_markup=add_back_button())
     await state.set_state(EmployeeStates.waiting_for_cash_start)
     await callback.answer()
 
 @router.message(EmployeeStates.waiting_for_cash_start)
 async def process_cash_start(message: Message, state: FSMContext):
+    """Обработать ввод наличных на начало дня."""
     try:
         cs = int(message.text)
         await state.update_data(cash_start=cs, previous_state=EmployeeStates.waiting_for_cash_start)
-        await message.answer(
-            "Подсветка включена? (Да/Нет)",
-            reply_markup=add_back_button(yes_no_keyboard())
-        )
+        await message.answer("Подсветка включена? (Да/Нет)", reply_markup=add_back_button(yes_no_keyboard()))
         await state.set_state(EmployeeStates.waiting_for_light_on)
     except ValueError:
         await message.answer("Введите корректное число.")
 
 @router.callback_query(F.data.startswith("yes_no:"), EmployeeStates.waiting_for_light_on)
 async def process_light_on(callback: CallbackQuery, state: FSMContext):
+    """Обработать ответ о подсветке."""
     val = callback.data.split(":", 1)[1] == "Да"
     await state.update_data(is_light_on=val, previous_state=EmployeeStates.waiting_for_light_on)
-    await callback.message.edit_text(
-        "Камера подключена? (Да/Нет)",
-        reply_markup=add_back_button(yes_no_keyboard())
-    )
+    await callback.message.edit_text("Камера подключена? (Да/Нет)", reply_markup=add_back_button(yes_no_keyboard()))
     await state.set_state(EmployeeStates.waiting_for_camera_on)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("yes_no:"), EmployeeStates.waiting_for_camera_on)
 async def process_camera_on(callback: CallbackQuery, state: FSMContext):
+    """Обработать ответ о камере."""
     val = callback.data.split(":", 1)[1] == "Да"
     await state.update_data(is_camera_on=val, previous_state=EmployeeStates.waiting_for_camera_on)
-    await callback.message.edit_text(
-        "Выкладка в норме? (Да/Нет)",
-        reply_markup=add_back_button(yes_no_keyboard())
-    )
+    await callback.message.edit_text("Выкладка в норме? (Да/Нет)", reply_markup=add_back_button(yes_no_keyboard()))
     await state.set_state(EmployeeStates.waiting_for_display_ok)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("yes_no:"), EmployeeStates.waiting_for_display_ok)
 async def process_display_ok(callback: CallbackQuery, state: FSMContext):
+    """Обработать ответ о выкладке."""
     val = callback.data.split(":", 1)[1] == "Да"
     await state.update_data(is_display_ok=val, previous_state=EmployeeStates.waiting_for_display_ok)
-    await callback.message.edit_text(
-        "Влажная уборка не требуется? (Да/Нет)",
-        reply_markup=add_back_button(yes_no_keyboard())
-    )
+    await callback.message.edit_text("Влажная уборка не требуется? (Да/Нет)", reply_markup=add_back_button(yes_no_keyboard()))
     await state.set_state(EmployeeStates.waiting_for_wet_cleaning)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("yes_no:"), EmployeeStates.waiting_for_wet_cleaning)
 async def process_wet_cleaning(callback: CallbackQuery, state: FSMContext):
+    """Обработать ответ о влажной уборке."""
     val = callback.data.split(":", 1)[1] == "Да"
     await state.update_data(is_wet_cleaning_not_required=val, previous_state=EmployeeStates.waiting_for_wet_cleaning)
-    await callback.message.edit_text(
-        "Оставьте комментарий или введите '-' для пропуска:",
-        reply_markup=add_back_button()
-    )
+    await callback.message.edit_text("Оставьте комментарий или введите '-' для пропуска:", reply_markup=add_back_button())
     await state.set_state(EmployeeStates.waiting_for_open_comment)
     await callback.answer()
 
 @router.message(EmployeeStates.waiting_for_open_comment)
 async def process_open_comment(message: Message, state: FSMContext):
+    """Обработать комментарий к открытию смены."""
     comment = "" if message.text.strip() == "-" else message.text.strip()
     await state.update_data(open_comment=comment, previous_state=EmployeeStates.waiting_for_open_comment)
-    await message.answer(
-        "Отправьте фото начала смены:",
-        reply_markup=add_back_button()
-    )
+    await message.answer("Отправьте фото начала смены:", reply_markup=add_back_button())
     await state.set_state(EmployeeStates.waiting_for_photo_start)
 
 @router.message(EmployeeStates.waiting_for_photo_start, F.photo)
 async def process_photo_start(message: Message, state: FSMContext, bot: Bot):
+    """Обработать фото начала смены и завершить процесс открытия."""
     file = await bot.get_file(message.photo[-1].file_id)
     tmp = f"/tmp/{message.from_user.id}.jpg"
     comp = f"/tmp/{message.from_user.id}_c.jpg"
@@ -338,9 +240,9 @@ async def process_photo_start(message: Message, state: FSMContext, bot: Bot):
     await state.update_data(shift_id=shift.id)
     await state.clear()
 
-# Перерывы
 @router.callback_query(F.data.startswith("shift:"))
 async def process_shift_buttons(callback: CallbackQuery):
+    """Обработать кнопки перерыва в смене."""
     action = callback.data.split(":", 1)[1]
     with SessionLocal() as db:
         emp = get_employee_by_id(db, callback.from_user.id)
@@ -365,9 +267,9 @@ async def process_shift_buttons(callback: CallbackQuery):
             await callback.message.answer(f"Перерыв окончен. Длительность: {dur} мин.")
     await callback.answer()
 
-# Завершение смены
 @router.message(Command("end_shift"))
 async def end_shift_cmd(message: Message, state: FSMContext):
+    """Начать завершение смены через команду /end_shift."""
     await state.clear()
     emp = get_registered_employee(message.from_user.id)
     if emp is None:
@@ -384,6 +286,7 @@ async def end_shift_cmd(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "action:end_shift")
 async def end_shift_button(callback: CallbackQuery, state: FSMContext):
+    """Начать завершение смены через кнопку."""
     with SessionLocal() as db:
         emp = get_employee_by_id(db, callback.from_user.id)
         if emp is None:
@@ -393,7 +296,6 @@ async def end_shift_button(callback: CallbackQuery, state: FSMContext):
         if emp.role == "senior_manager":
             await callback.message.answer("Старшие сотрудники не могут завершать смену.")
             await callback.answer()
-
             return
         sh = db.query(Shift).filter(Shift.employee_id == emp.id, Shift.end_time.is_(None)).first()
         if not sh:
@@ -407,6 +309,7 @@ async def end_shift_button(callback: CallbackQuery, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_cash_income)
 async def process_cash_income(message: Message, state: FSMContext):
+    """Обработать ввод прихода наличных."""
     try:
         ci = int(message.text)
         await state.update_data(cash_income=ci, previous_state=EmployeeStates.waiting_for_cash_income)
@@ -417,6 +320,7 @@ async def process_cash_income(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_cashless_income)
 async def process_total(message: Message, state: FSMContext):
+    """Обработать ввод безналичного дохода."""
     try:
         cashless_income = int(message.text)
         await state.update_data(cashless_income=cashless_income, previous_state=EmployeeStates.waiting_for_cashless_income)
@@ -427,6 +331,7 @@ async def process_total(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_expenses)
 async def process_expenses(message: Message, state: FSMContext):
+    """Обработать ввод расходов."""
     try:
         expenses = int(message.text)
         await state.update_data(expenses=expenses, previous_state=EmployeeStates.waiting_for_expenses)
@@ -437,6 +342,7 @@ async def process_expenses(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_subscriptions)
 async def process_subscriptions(message: Message, state: FSMContext):
+    """Обработать ввод количества подписок."""
     try:
         subs = int(message.text)
         await state.update_data(subscriptions=subs, previous_state=EmployeeStates.waiting_for_subscriptions)
@@ -447,6 +353,7 @@ async def process_subscriptions(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_loyalty_cards_issued)
 async def process_loyalty_cards_issued(message: Message, state: FSMContext):
+    """Обработать ввод количества выданных карт лояльности."""
     try:
         lci = int(message.text)
         await state.update_data(loyalty_cards_issued=lci, previous_state=EmployeeStates.waiting_for_loyalty_cards_issued)
@@ -457,6 +364,7 @@ async def process_loyalty_cards_issued(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_incassation)
 async def process_incassation(message: Message, state: FSMContext):
+    """Обработать ввод суммы инкассации."""
     try:
         inc = int(message.text)
         await state.update_data(incassation=inc, previous_state=EmployeeStates.waiting_for_incassation)
@@ -467,6 +375,7 @@ async def process_incassation(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_qr)
 async def process_qr(message: Message, state: FSMContext):
+    """Обработать ввод суммы по QR."""
     try:
         qr = int(message.text)
         await state.update_data(qr=qr, previous_state=EmployeeStates.waiting_for_qr)
@@ -477,6 +386,7 @@ async def process_qr(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_delivery)
 async def process_delivery(message: Message, state: FSMContext):
+    """Обработать ввод суммы доставки."""
     try:
         delivery = int(message.text)
         await state.update_data(delivery=delivery, previous_state=EmployeeStates.waiting_for_delivery)
@@ -487,6 +397,7 @@ async def process_delivery(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_online_orders)
 async def process_online_orders(message: Message, state: FSMContext):
+    """Обработать ввод количества онлайн-заказов."""
     try:
         oo = int(message.text)
         await state.update_data(online_orders=oo, previous_state=EmployeeStates.waiting_for_online_orders)
@@ -497,6 +408,7 @@ async def process_online_orders(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_defect)
 async def process_defect(message: Message, state: FSMContext):
+    """Обработать ввод суммы брака."""
     try:
         defect = int(message.text)
         await state.update_data(defect=defect, previous_state=EmployeeStates.waiting_for_defect)
@@ -507,6 +419,7 @@ async def process_defect(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_close_comment)
 async def process_close_comment(message: Message, state: FSMContext):
+    """Обработать комментарий к закрытию смены."""
     comment = "" if message.text.strip() == "-" else message.text.strip()
     await state.update_data(close_comment=comment, previous_state=EmployeeStates.waiting_for_close_comment)
     await message.answer("Отправьте фото конца смены:", reply_markup=add_back_button())
@@ -514,6 +427,7 @@ async def process_close_comment(message: Message, state: FSMContext):
 
 @router.message(EmployeeStates.waiting_for_photo_end, F.photo)
 async def process_photo_end(message: Message, state: FSMContext, bot: Bot):
+    """Обработать фото конца смены и завершить смену."""
     file = await bot.get_file(message.photo[-1].file_id)
     tmp = f"/tmp/{message.from_user.id}_end.jpg"
     comp = f"/tmp/{message.from_user.id}_end_c.jpg"
@@ -579,19 +493,15 @@ async def process_photo_end(message: Message, state: FSMContext, bot: Bot):
     await message.answer(f"Смена завершена. Общее время перерыва: {total_break_minutes} мин.")
     await state.clear()
 
-# Проверка
 @router.message(Command("perform_check"))
 async def perform_check(message: Message, state: FSMContext):
-    print(f"Message ID: {message.from_user.id}")
+    """Начать проверку для старшего сотрудника через команду /perform_check."""
     await state.clear()
     emp = get_registered_employee(message.from_user.id)
-    print(f"Employee: {emp}, Role: {emp.role if emp else 'None'}")
     if emp is None:
-        print("Сотрудник не найден в базе данных.")
         await message.answer("Вы не зарегистрированы. Обратитесь к администратору.")
         return
     if emp.role != "senior_manager":
-        print(f"Неправильная роль: {emp.role}")
         await message.answer("Вы не зарегистрированы как старший сотрудник.")
         return
     await message.answer("Торговая точка:", reply_markup=get_trading_points())
@@ -599,6 +509,7 @@ async def perform_check(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "action:perform_check")
 async def perform_check_button(callback: CallbackQuery, state: FSMContext):
+    """Начать проверку для старшего сотрудника через кнопку."""
     with SessionLocal() as db:
         emp = get_employee_by_id(db, callback.from_user.id)
         if emp is None:
@@ -615,72 +526,61 @@ async def perform_check_button(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("trading_point:"), EmployeeStates.waiting_for_trading_point_perform_check)
 async def process_trading_perform_check(callback: CallbackQuery, state: FSMContext):
+    """Обработать выбор торговой точки для проверки."""
     tp = callback.data.split(":", 1)[1]
     await state.update_data(trading_point=tp, previous_state=EmployeeStates.waiting_for_trading_point_perform_check)
-    await callback.message.edit_text(
-        "Чистота:",
-        reply_markup=add_back_button(get_cleaning_buttons())
-    )
+    await callback.message.edit_text("Чистота:", reply_markup=add_back_button(get_cleaning_buttons()))
     await state.set_state(EmployeeStates.waiting_for_cleaning)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("cleaning:"), EmployeeStates.waiting_for_cleaning)
 async def process_cleaning(callback: CallbackQuery, state: FSMContext):
+    """Обработать выбор уровня чистоты."""
     val = callback.data.split(":", 1)[1]
     await state.update_data(cleaning=val, previous_state=EmployeeStates.waiting_for_cleaning)
-    await callback.message.edit_text(
-        "Введите время открытия:",
-        reply_markup=add_back_button(opening_time_keyboard())
-    )
+    await callback.message.edit_text("Введите время открытия:", reply_markup=add_back_button(opening_time_keyboard()))
     await state.set_state(EmployeeStates.waiting_for_opening_time)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("opening_time:"), EmployeeStates.waiting_for_opening_time)
 async def process_opening_time(callback: CallbackQuery, state: FSMContext):
+    """Обработать выбор времени открытия."""
     val = callback.data.split(":", 1)[1]
     await state.update_data(opening_time=val, previous_state=EmployeeStates.waiting_for_opening_time)
-    await callback.message.edit_text(
-        "Выкладка днем:",
-        reply_markup=add_back_button(layout_keyboard())
-    )
+    await callback.message.edit_text("Выкладка днем:", reply_markup=add_back_button(layout_keyboard()))
     await state.set_state(EmployeeStates.waiting_for_layout_afternoon)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("layout:"), EmployeeStates.waiting_for_layout_afternoon)
 async def process_layout_afternoon(callback: CallbackQuery, state: FSMContext):
+    """Обработать выбор выкладки днем."""
     val = callback.data.split(":", 1)[1]
     await state.update_data(layout_afternoon=val, previous_state=EmployeeStates.waiting_for_layout_afternoon)
-    await callback.message.edit_text(
-        "Выкладка вечером:",
-        reply_markup=add_back_button(layout_keyboard())
-    )
+    await callback.message.edit_text("Выкладка вечером:", reply_markup=add_back_button(layout_keyboard()))
     await state.set_state(EmployeeStates.waiting_for_layout_evening)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("layout:"), EmployeeStates.waiting_for_layout_evening)
 async def process_layout_evening(callback: CallbackQuery, state: FSMContext):
+    """Обработать выбор выкладки вечером."""
     val = callback.data.split(":", 1)[1]
     await state.update_data(layout_evening=val, previous_state=EmployeeStates.waiting_for_layout_evening)
-    await callback.message.edit_text(
-        "Время отходов:",
-        reply_markup=add_back_button(waste_time_keyboard())
-    )
+    await callback.message.edit_text("Время отходов:", reply_markup=add_back_button(waste_time_keyboard()))
     await state.set_state(EmployeeStates.waiting_for_waste_time)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("waste_time:"), EmployeeStates.waiting_for_waste_time)
 async def process_waste_time(callback: CallbackQuery, state: FSMContext):
+    """Обработать выбор времени отходов."""
     val = callback.data.split(":", 1)[1]
     await state.update_data(waste_time=val, previous_state=EmployeeStates.waiting_for_waste_time)
-    await callback.message.edit_text(
-        "Форма сотрудников в порядке?",
-        reply_markup=add_back_button(yes_no_keyboard())
-    )
+    await callback.message.edit_text("Форма сотрудников в порядке?", reply_markup=add_back_button(yes_no_keyboard()))
     await state.set_state(EmployeeStates.waiting_for_uniform)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("yes_no:"), EmployeeStates.waiting_for_uniform)
 async def process_uniform(callback: CallbackQuery, state: FSMContext):
+    """Обработать ответ о форме сотрудников и завершить проверку."""
     ok = callback.data.split(":", 1)[1] == "Да"
     data = await state.get_data()
     with SessionLocal() as db:
@@ -692,7 +592,7 @@ async def process_uniform(callback: CallbackQuery, state: FSMContext):
         create_check(
             db,
             employee_id=emp.id,
-            trading_point=data["trading_point"],  # Исправлено на data["trading_point"]
+            trading_point=data["trading_point"],
             cleaning=data["cleaning"],
             opening=data["opening_time"],
             layout_afternoon=data["layout_afternoon"],
@@ -702,7 +602,7 @@ async def process_uniform(callback: CallbackQuery, state: FSMContext):
         )
         send_to_airtable("perform_check", {
             "employee_id": emp.telegram_id,
-            "trading_point": data["trading_point"],  # Исправлено на data["trading_point"]
+            "trading_point": data["trading_point"],
             "cleaning": data["cleaning"],
             "opening_time": data["opening_time"],
             "layout_afternoon": data["layout_afternoon"],

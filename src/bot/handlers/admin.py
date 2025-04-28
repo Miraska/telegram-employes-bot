@@ -11,8 +11,18 @@ from utils.auth import is_admin
 
 router = Router()
 
+# Функция для добавления кнопки "Назад"
+def add_back_button_admin(keyboard: InlineKeyboardMarkup = None) -> InlineKeyboardMarkup:
+    back_button = InlineKeyboardButton(text="Назад", callback_data="admin:back")
+    if keyboard is None:
+        return InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+    else:
+        keyboard.inline_keyboard.append([back_button])
+        return keyboard
+
 @router.message(F.text == "Нанять сотрудника")
 async def start_hire(message: Message, state: FSMContext):
+    """Начать процесс найма сотрудника."""
     if not is_admin(message):
         return await message.answer("Доступ запрещён.")
     await message.answer("Выберите роль сотрудника:", reply_markup=add_back_button_admin(get_roles_menu()))
@@ -20,6 +30,7 @@ async def start_hire(message: Message, state: FSMContext):
 
 @router.callback_query(F.data.startswith("role:"), AdminStates.choosing_role)
 async def choose_role(callback: CallbackQuery, state: FSMContext):
+    """Обработать выбор роли сотрудника."""
     if not is_admin(callback):
         await callback.message.answer("Доступ запрещён.")
         await callback.answer()
@@ -31,9 +42,9 @@ async def choose_role(callback: CallbackQuery, state: FSMContext):
     await state.set_state(AdminStates.getting_id)
     await callback.answer()
 
-
 @router.message(AdminStates.getting_id)
 async def get_id(message: Message, state: FSMContext):
+    """Получить Telegram ID сотрудника."""
     text = message.text.strip()
     if not text.isdigit():
         return await message.answer("Пожалуйста, введите числовой Telegram ID.", reply_markup=add_back_button_admin())
@@ -43,6 +54,7 @@ async def get_id(message: Message, state: FSMContext):
 
 @router.message(AdminStates.getting_fio)
 async def get_fio(message: Message, state: FSMContext):
+    """Получить ФИО сотрудника и завершить процесс найма."""
     full_name = message.text.strip()
     if full_name.startswith("/"):
         return await message.answer("Введите корректное ФИО, а не команду.", reply_markup=add_back_button_admin())
@@ -76,6 +88,7 @@ async def get_fio(message: Message, state: FSMContext):
 
 @router.message(F.text == "Уволить сотрудника")
 async def start_fire(message: Message, state: FSMContext):
+    """Начать процесс увольнения сотрудника."""
     if not is_admin(message):
         return await message.answer("Доступ запрещён.")
     await message.answer("Введите числовой Telegram ID сотрудника:", reply_markup=add_back_button_admin())
@@ -83,6 +96,7 @@ async def start_fire(message: Message, state: FSMContext):
 
 @router.message(AdminStates.firing_id)
 async def fire_employee_handler(message: Message, state: FSMContext):
+    """Уволить сотрудника по Telegram ID."""
     tid = message.text.strip()
     if not tid.isdigit():
         return await message.answer("Пожалуйста, введите числовой Telegram ID.", reply_markup=add_back_button_admin())
@@ -99,52 +113,27 @@ async def fire_employee_handler(message: Message, state: FSMContext):
         else:
             await message.answer("Сотрудник не найден.")
     await state.clear()
-    
-
-    # Функция для добавления кнопки "Назад" (админская)
-def add_back_button_admin(keyboard: InlineKeyboardMarkup = None) -> InlineKeyboardMarkup:
-    back_button = InlineKeyboardButton(text="Назад", callback_data="admin:back")
-    if keyboard is None:
-        return InlineKeyboardMarkup(inline_keyboard=[[back_button]])
-    else:
-        keyboard.inline_keyboard.append([back_button])
-        return keyboard
 
 @router.callback_query(F.data == "admin:back")
 async def admin_back_handler(callback: CallbackQuery, state: FSMContext):
-    """
-    Обработчик кнопки «Назад» в админском потоке.
-    После навигации сбрасываем previous_state, чтобы при повторном нажатии
-    не пытаться дважды сделать одинаковый edit_text.
-    """
+    """Обработать нажатие кнопки 'Назад' в админке."""
+    current_state = await state.get_state()
     data = await state.get_data()
-    previous = data.get("previous_state")
+    previous_state = data.get("previous_state")
 
-    # Назад из выбора роли — возвращаем на меню ролей
-    if previous == AdminStates.choosing_role:
-        await callback.message.edit_text(
-            "Выберите роль сотрудника:",
-            reply_markup=add_back_button_admin(get_roles_menu())
-        )
-        await state.set_state(AdminStates.choosing_role)
-        # сброс
-        await state.update_data(previous_state=None)
-
-    # Назад из ввода ID — тоже возвращаем на выбор роли
-    elif previous == AdminStates.getting_id:
-        await callback.message.edit_text(
-            "Выберите роль сотрудника:",
-            reply_markup=add_back_button_admin(get_roles_menu())
-        )
-        await state.set_state(AdminStates.choosing_role)
-        await state.update_data(previous_state=None)
-
-    # Во всех остальных случаях — в главное админ-меню
-    else:
-        await callback.message.edit_text(
-            "Возврат в главное меню.",
-            reply_markup=get_admin_menu()
-        )
+    if current_state == AdminStates.choosing_role or not previous_state:
+        await callback.message.edit_text("Возврат в главное меню.", reply_markup=get_admin_menu())
         await state.clear()
-
+    elif current_state == AdminStates.getting_id:
+        await callback.message.edit_text("Выберите роль сотрудника:", reply_markup=add_back_button_admin(get_roles_menu()))
+        await state.set_state(AdminStates.choosing_role)
+    elif current_state == AdminStates.getting_fio:
+        await callback.message.edit_text("Введите числовой Telegram ID сотрудника:", reply_markup=add_back_button_admin())
+        await state.set_state(AdminStates.getting_id)
+    elif current_state == AdminStates.firing_id:
+        await callback.message.edit_text("Возврат в главное меню.", reply_markup=get_admin_menu())
+        await state.clear()
+    else:
+        await callback.message.edit_text("Возврат в главное меню.", reply_markup=get_admin_menu())
+        await state.clear()
     await callback.answer()
