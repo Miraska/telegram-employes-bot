@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 
 from bot.states.admin import AdminStates
@@ -15,7 +15,7 @@ router = Router()
 async def start_hire(message: Message, state: FSMContext):
     if not is_admin(message):
         return await message.answer("Доступ запрещён.")
-    await message.answer("Выберите роль сотрудника:", reply_markup=get_roles_menu())
+    await message.answer("Выберите роль сотрудника:", reply_markup=add_back_button_admin(get_roles_menu()))
     await state.set_state(AdminStates.choosing_role)
 
 @router.callback_query(F.data.startswith("role:"), AdminStates.choosing_role)
@@ -26,25 +26,26 @@ async def choose_role(callback: CallbackQuery, state: FSMContext):
         return
     role_text = callback.data.split(":", 1)[1]
     role = "manager" if role_text == "Обычный сотрудник" else "senior_manager"
-    await state.update_data(role=role)
-    await callback.message.edit_text("Введите числовой Telegram ID сотрудника:", reply_markup=None)
+    await state.update_data(role=role, previous_state=AdminStates.choosing_role)
+    await callback.message.edit_text("Введите числовой Telegram ID сотрудника:", reply_markup=add_back_button_admin())
     await state.set_state(AdminStates.getting_id)
     await callback.answer()
+
 
 @router.message(AdminStates.getting_id)
 async def get_id(message: Message, state: FSMContext):
     text = message.text.strip()
     if not text.isdigit():
-        return await message.answer("Пожалуйста, введите числовой Telegram ID.")
-    await state.update_data(telegram_id=text, username=None)
-    await message.answer("Введите ФИО сотрудника:")
+        return await message.answer("Пожалуйста, введите числовой Telegram ID.", reply_markup=add_back_button_admin())
+    await state.update_data(telegram_id=text, username=None, previous_state=AdminStates.getting_id)
+    await message.answer("Введите ФИО сотрудника:", reply_markup=add_back_button_admin())
     await state.set_state(AdminStates.getting_fio)
 
 @router.message(AdminStates.getting_fio)
 async def get_fio(message: Message, state: FSMContext):
     full_name = message.text.strip()
     if full_name.startswith("/"):
-        return await message.answer("Введите корректное ФИО, а не команду.")
+        return await message.answer("Введите корректное ФИО, а не команду.", reply_markup=add_back_button_admin())
     data = await state.get_data()
     with SessionLocal() as db:
         old = fire_employee(db, data["telegram_id"])
@@ -77,14 +78,14 @@ async def get_fio(message: Message, state: FSMContext):
 async def start_fire(message: Message, state: FSMContext):
     if not is_admin(message):
         return await message.answer("Доступ запрещён.")
-    await message.answer("Введите числовой Telegram ID сотрудника:")
+    await message.answer("Введите числовой Telegram ID сотрудника:", reply_markup=add_back_button_admin())
     await state.set_state(AdminStates.firing_id)
 
 @router.message(AdminStates.firing_id)
 async def fire_employee_handler(message: Message, state: FSMContext):
     tid = message.text.strip()
     if not tid.isdigit():
-        return await message.answer("Пожалуйста, введите числовой Telegram ID.")
+        return await message.answer("Пожалуйста, введите числовой Telegram ID.", reply_markup=add_back_button_admin())
     with SessionLocal() as db:
         emp = fire_employee(db, tid)
         if emp:
@@ -98,3 +99,52 @@ async def fire_employee_handler(message: Message, state: FSMContext):
         else:
             await message.answer("Сотрудник не найден.")
     await state.clear()
+    
+
+    # Функция для добавления кнопки "Назад" (админская)
+def add_back_button_admin(keyboard: InlineKeyboardMarkup = None) -> InlineKeyboardMarkup:
+    back_button = InlineKeyboardButton(text="Назад", callback_data="admin:back")
+    if keyboard is None:
+        return InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+    else:
+        keyboard.inline_keyboard.append([back_button])
+        return keyboard
+
+@router.callback_query(F.data == "admin:back")
+async def admin_back_handler(callback: CallbackQuery, state: FSMContext):
+    """
+    Обработчик кнопки «Назад» в админском потоке.
+    После навигации сбрасываем previous_state, чтобы при повторном нажатии
+    не пытаться дважды сделать одинаковый edit_text.
+    """
+    data = await state.get_data()
+    previous = data.get("previous_state")
+
+    # Назад из выбора роли — возвращаем на меню ролей
+    if previous == AdminStates.choosing_role:
+        await callback.message.edit_text(
+            "Выберите роль сотрудника:",
+            reply_markup=add_back_button_admin(get_roles_menu())
+        )
+        await state.set_state(AdminStates.choosing_role)
+        # сброс
+        await state.update_data(previous_state=None)
+
+    # Назад из ввода ID — тоже возвращаем на выбор роли
+    elif previous == AdminStates.getting_id:
+        await callback.message.edit_text(
+            "Выберите роль сотрудника:",
+            reply_markup=add_back_button_admin(get_roles_menu())
+        )
+        await state.set_state(AdminStates.choosing_role)
+        await state.update_data(previous_state=None)
+
+    # Во всех остальных случаях — в главное админ-меню
+    else:
+        await callback.message.edit_text(
+            "Возврат в главное меню.",
+            reply_markup=get_admin_menu()
+        )
+        await state.clear()
+
+    await callback.answer()

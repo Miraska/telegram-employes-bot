@@ -67,7 +67,7 @@ def layout_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Правильная выкладка", callback_data="layout:Правильная выкладка")],
         [InlineKeyboardButton(text="Мелкие исправления", callback_data="layout:Мелкие исправления")],
-        [InlineKeyboardButton(text="Переделка в выкладке", callback_data="layout:Переделка в выкладке")],
+        [InlineKeyboardButton(text="Переделка выкладки", callback_data="layout:Переделка в выкладке")],
     ])
 
 def waste_time_keyboard() -> InlineKeyboardMarkup:
@@ -76,3 +76,14 @@ def waste_time_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Не соблюдено", callback_data="waste_time:Не соблюдено")],
         [InlineKeyboardButton(text="Фактически не превышено", callback_data="waste_time:Фактически не превышено")],
     ])
+
+
+
+
+def add_back_button(keyboard: InlineKeyboardMarkup = None) -> InlineKeyboardMarkup:
+    back_button = InlineKeyboardButton(text="Назад", callback_data="action:back")
+    if keyboard is None:
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+    else:
+        keyboard.inline_keyboard.append([back_button])
+    return keyboard
