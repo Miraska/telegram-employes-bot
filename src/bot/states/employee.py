@@ -1,24 +1,19 @@
 from aiogram.fsm.state import StatesGroup, State
 
 class EmployeeStates(StatesGroup):
-    waiting_for_registration = State()
     waiting_for_trading_point = State()
     waiting_for_cash_start = State()
-
-    # Открытие смены – дополнительные поля
     waiting_for_light_on = State()
     waiting_for_camera_on = State()
     waiting_for_display_ok = State()
     waiting_for_wet_cleaning = State()
     waiting_for_open_comment = State()
-
     waiting_for_photo_start = State()
-
+    confirming_start_shift = State()
+    editing_start_shift = State()
     waiting_for_cash_income = State()
     waiting_for_cashless_income = State()
     waiting_for_expenses = State()
-
-    # Закрытие смены
     waiting_for_subscriptions = State()
     waiting_for_loyalty_cards_issued = State()
     waiting_for_incassation = State()
@@ -27,10 +22,9 @@ class EmployeeStates(StatesGroup):
     waiting_for_online_orders = State()
     waiting_for_defect = State()
     waiting_for_close_comment = State()
-
     waiting_for_photo_end = State()
-
-    # Провести проверку
+    confirming_end_shift = State()
+    editing_end_shift = State()
     waiting_for_trading_point_perform_check = State()
     waiting_for_cleaning = State()
     waiting_for_opening_time = State()
@@ -38,3 +32,5 @@ class EmployeeStates(StatesGroup):
     waiting_for_layout_evening = State()
     waiting_for_waste_time = State()
     waiting_for_uniform = State()
+    confirming_perform_check = State()
+    editing_perform_check = State()
