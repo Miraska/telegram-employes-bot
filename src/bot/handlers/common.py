@@ -40,7 +40,7 @@ async def cmd_start(message: Message, state: FSMContext):
     if keyboard.inline_keyboard:
         await message.answer("Добро пожаловать! Выберите действие:", reply_markup=keyboard)
     else:
-        await message.answer("Добро пожаловать! Ваш ID не добавлен в пул сотрудников, обратитесь к администратору.")
+        await message.answer("Добро пожаловать! Ваш ID не добавлен в пул сотрудников, просьба обратиться к администратору, чтобы получить необходимые права.")
 
 # Команда /cancel
 @router.message(Command("cancel"))
@@ -57,9 +57,9 @@ async def cancel_handler(message: Message, state: FSMContext):
 async def show_menu(message: Message, state: FSMContext):
     keyboard = get_main_menu(message)
     if keyboard.inline_keyboard:
-        await message.answer("Ваше меню:", reply_markup=keyboard)
+        await message.answer("Ваше главное меню:", reply_markup=keyboard)
     else:
-        await message.answer("У вас нет доступа к меню.")
+        await message.answer("У вас нет доступа к меню. Необходимо зарегестрироваться, просьба обратиться к администратору.")
 
 # Команда /my_id
 @router.message(Command("my_id"))
@@ -191,3 +191,50 @@ async def back_button_handler(callback: CallbackQuery, state: FSMContext):
         else:
             await callback.answer("Вы уже в главном меню.")
     await callback.answer()
+
+
+@router.message(Command("help"))
+async def help_handler(message: Message, state: FSMContext):
+    """
+    Обработчик команды /help, который выводит список доступных команд в зависимости от роли пользователя.
+    """
+    user_id = message.from_user.id
+    help_text = "Доступные команды:\n\n"
+
+    # Проверка роли администратора
+    if is_admin(message):
+        help_text += (
+            "**Команды администратора:**\n"
+            "`/hire_employee` - Нанять нового сотрудника.\n"
+            "`/fire_employee` - Уволить сотрудника.\n\n"
+        )
+
+    # Проверка зарегистрированного сотрудника и его роли
+    if is_registered_employee(user_id):
+        emp = get_registered_employee(user_id)
+        if emp.role == "manager":
+            help_text += (
+                "**Команды для обычных сотрудников:**\n"
+                "`/start_shift` - Начать смену.\n"
+                "`/end_shift` - Завершить смену.\n\n"
+            )
+        elif emp.role == "senior_manager":
+            help_text += (
+                "**Команды для старших сотрудников:**\n"
+                "`/perform_check` - Выполнить проверку.\n\n"
+            )
+
+    # Общие команды, доступные всем
+    help_text += (
+        "**Общие команды:**\n"
+        "`/start` - Начать взаимодействие с ботом.\n"
+        "`/menu` - Показать главное меню.\n"
+        "`/my_id` - Получить свой Telegram ID.\n"
+        "`/cancel` - Отменить текущее действие.\n"
+    )
+
+    # Сообщение для незарегистрированных пользователей
+    if not is_registered_employee(user_id) and not is_admin(message):
+        help_text += "\n\nВаш ID не добавлен в пул сотрудников. Обратитесь к администратору для регистрации."
+
+    await message.answer(help_text, parse_mode="Markdown")

@@ -19,6 +19,7 @@ class HireEmployeeStates(StatesGroup):
     getting_id = State()          # Ввод Telegram ID
     getting_fio = State()         # Ввод ФИО
     confirming = State()          # Подтверждение данных
+    editing = State()             # Редактирование данных
 
 # Функция для создания клавиатуры подтверждения
 def get_confirmation_keyboard() -> InlineKeyboardMarkup:
@@ -34,7 +35,7 @@ def get_edit_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Роль", callback_data="edit:role")],
         [InlineKeyboardButton(text="Telegram ID", callback_data="edit:telegram_id")],
         [InlineKeyboardButton(text="ФИО", callback_data="edit:full_name")],
-        [InlineKeyboardButton(text="Подтвердить данные", callback_data="edit:back")]
+        [InlineKeyboardButton(text="Назад к подтверждению", callback_data="edit:back")]
     ])
 
 # Обработка меню администратора
@@ -68,8 +69,13 @@ async def process_role(callback: CallbackQuery, state: FSMContext):
     role_text = callback.data.split(":", 1)[1]
     role = "manager" if role_text == "Обычный сотрудник" else "senior_manager"
     await state.update_data(role=role)
-    await callback.message.edit_text("Введите числовой Telegram ID сотрудника:")
-    await state.set_state(HireEmployeeStates.getting_id)
+    data = await state.get_data()
+    # Если все данные уже есть (при редактировании), возвращаемся к подтверждению
+    if "telegram_id" in data and "full_name" in data:
+        await show_confirmation(callback, state)
+    else:
+        await callback.message.edit_text("Введите числовой Telegram ID сотрудника:")
+        await state.set_state(HireEmployeeStates.getting_id)
     await callback.answer()
 
 # Обработка ввода Telegram ID
@@ -79,8 +85,13 @@ async def process_id(message: Message, state: FSMContext):
     if not telegram_id.isdigit():
         return await message.answer("Пожалуйста, введите числовой Telegram ID.")
     await state.update_data(telegram_id=telegram_id)
-    await message.answer("Введите ФИО сотрудника:")
-    await state.set_state(HireEmployeeStates.getting_fio)
+    data = await state.get_data()
+    # Если все данные уже есть (при редактировании), возвращаемся к подтверждению
+    if "role" in data and "full_name" in data:
+        await show_confirmation_message(message, state)
+    else:
+        await message.answer("Введите ФИО сотрудника:")
+        await state.set_state(HireEmployeeStates.getting_fio)
 
 # Обработка ввода ФИО
 @router.message(HireEmployeeStates.getting_fio)
@@ -89,8 +100,10 @@ async def process_fio(message: Message, state: FSMContext):
     if full_name.startswith("/"):
         return await message.answer("Введите корректное ФИО, а не команду.")
     await state.update_data(full_name=full_name)
-    
-    # Показываем собранные данные для подтверждения
+    await show_confirmation_message(message, state)
+
+# Функция для отображения подтверждения (для сообщений)
+async def show_confirmation_message(message: Message, state: FSMContext):
     data = await state.get_data()
     role_display = "Обычный сотрудник" if data['role'] == "manager" else "Старший сотрудник"
     confirmation_text = (
@@ -101,6 +114,20 @@ async def process_fio(message: Message, state: FSMContext):
         "Все верно?"
     )
     await message.answer(confirmation_text, reply_markup=get_confirmation_keyboard())
+    await state.set_state(HireEmployeeStates.confirming)
+
+# Функция для отображения подтверждения (для callback)
+async def show_confirmation(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    role_display = "Обычный сотрудник" if data['role'] == "manager" else "Старший сотрудник"
+    confirmation_text = (
+        "Проверьте данные:\n"
+        f"Роль: {role_display}\n"
+        f"Telegram ID: {data['telegram_id']}\n"
+        f"ФИО: {data['full_name']}\n\n"
+        "Все верно?"
+    )
+    await callback.message.edit_text(confirmation_text, reply_markup=get_confirmation_keyboard())
     await state.set_state(HireEmployeeStates.confirming)
 
 # Обработка подтверждения или редактирования
@@ -135,11 +162,12 @@ async def process_confirmation(callback: CallbackQuery, state: FSMContext):
                 "role": emp.role,
                 "hired_at": emp.hired_at and emp.hired_at.isoformat()
             })
-        await callback.message.edit_text(f"Сотрудник {emp.full_name} нанят как {emp.role}!")
+        await callback.message.edit_text(f"Сотрудник {emp.full_name} нанят как {emp.role}!", reply_markup=get_main_menu(callback.message))
         await state.clear()
     
     elif action == "edit":
         # Переход к редактированию
+        await state.set_state(HireEmployeeStates.editing)
         role_display = "Обычный сотрудник" if data['role'] == "manager" else "Старший сотрудник"
         edit_text = (
             "Выберите, что хотите отредактировать:\n"
@@ -157,7 +185,7 @@ async def process_confirmation(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 # Обработка редактирования
-@router.callback_query(F.data.startswith("edit:"), HireEmployeeStates.confirming)
+@router.callback_query(F.data.startswith("edit:"), HireEmployeeStates.editing)
 async def process_edit(callback: CallbackQuery, state: FSMContext):
     field = callback.data.split(":", 1)[1]
     
@@ -172,16 +200,7 @@ async def process_edit(callback: CallbackQuery, state: FSMContext):
         await state.set_state(HireEmployeeStates.getting_fio)
     elif field == "back":
         # Возврат к подтверждению
-        data = await state.get_data()
-        role_display = "Обычный сотрудник" if data['role'] == "manager" else "Старший сотрудник"
-        confirmation_text = (
-            "Проверьте данные:\n"
-            f"Роль: {role_display}\n"
-            f"Telegram ID: {data['telegram_id']}\n"
-            f"ФИО: {data['full_name']}\n\n"
-            "Все верно?"
-        )
-        await callback.message.edit_text(confirmation_text, reply_markup=get_confirmation_keyboard())
+        await show_confirmation(callback, state)
     
     await callback.answer()
 
@@ -207,7 +226,7 @@ async def fire_employee_handler(message: Message, state: FSMContext):
                 "full_name": emp.full_name,
                 "fired_at": emp.fired_at and emp.fired_at.isoformat()
             })
-            await message.answer(f"Сотрудник {emp.full_name} уволен.")
+            await message.answer(f"Сотрудник {emp.full_name} уволен.", reply_markup=get_main_menu(message))
         else:
-            await message.answer("Сотрудник не найден.")
+            await message.answer("Сотрудник не найден.", reply_markup=get_main_menu(message))
     await state.clear()

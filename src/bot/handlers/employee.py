@@ -321,11 +321,11 @@ async def process_confirm_start_shift(callback: CallbackQuery, state: FSMContext
                 trading_point=data["trading_point"],
                 cash_start=data["cash_start"],
                 photo_url=data["photo_url_start"],
+                open_comment=data["open_comment"],
                 is_light_on=data["is_light_on"],
                 is_camera_on=data["is_camera_on"],
                 is_display_ok=data["is_display_ok"],
                 is_wet_cleaning_not_required=data["is_wet_cleaning_not_required"],
-                open_comment=data["open_comment"],
             )
             msg = await callback.message.answer("Смена начата!", reply_markup=get_shift_buttons())
             shift.break_message_id = msg.message_id
@@ -337,6 +337,10 @@ async def process_confirm_start_shift(callback: CallbackQuery, state: FSMContext
                 "start_time": shift.start_time.isoformat(),
                 "photo_url": data["photo_url_start"],
                 "open_comment": shift.open_comment,
+                "is_light_on": data["is_light_on"],
+                "is_camera_on": data["is_camera_on"],
+                "is_display_ok": data["is_display_ok"],
+                "is_wet_cleaning_not_required": data["is_wet_cleaning_not_required"],
             })
         await state.clear()
     elif action == "edit":
@@ -909,7 +913,7 @@ async def process_confirm_end_shift(callback: CallbackQuery, state: FSMContext, 
                 text="Смена завершена.",
                 reply_markup=None
             )
-        await callback.message.edit_text(f"Смена завершена. Общее время перерыва: {total_break_minutes} мин.")
+        await callback.message.edit_text(f"Смена завершена. Общее время перерыва: {total_break_minutes} мин.", reply_markup=get_main_menu())
         await state.clear()
     elif action == "edit":
         await state.set_state(EmployeeStates.editing_end_shift)
