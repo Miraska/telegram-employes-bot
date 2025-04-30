@@ -49,9 +49,9 @@ def get_trading_points() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Европолис", callback_data="trading_point:Европолис")],
         [InlineKeyboardButton(text="Рио Дмитров", callback_data="trading_point:Рио Дмитров")],
         [InlineKeyboardButton(text="Пушкино Парк", callback_data="trading_point:Пушкино Парк")],
-        [InlineKeyboardButton(text="Патрихи", callback_data="trading_point:Патрихи")],
+        [InlineKeyboardButton(text="Патрики", callback_data="trading_point:Патрихи")],
         [InlineKeyboardButton(text="Лефортово", callback_data="trading_point:Лефортово")],
-        [InlineKeyboardButton(text="Красный Кнт", callback_data="trading_point:Красный Кнт")],
+        [InlineKeyboardButton(text="Красный Кит", callback_data="trading_point:Красный Кнт")],
     ])
 
 def yes_no_keyboard() -> InlineKeyboardMarkup:
