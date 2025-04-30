@@ -913,7 +913,7 @@ async def process_confirm_end_shift(callback: CallbackQuery, state: FSMContext, 
                 text="Смена завершена.",
                 reply_markup=None
             )
-        await callback.message.edit_text(f"Смена завершена. Общее время перерыва: {total_break_minutes} мин.", reply_markup=get_main_menu())
+        await callback.message.edit_text(f"Смена завершена. Общее время перерыва: {total_break_minutes} мин.", reply_markup=get_main_menu(callback.message))
         await state.clear()
     elif action == "edit":
         await state.set_state(EmployeeStates.editing_end_shift)
