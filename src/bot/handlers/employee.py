@@ -13,7 +13,8 @@ from bot.keyboards.employee import (
     get_end_shift_edit_keyboard,
     get_perform_check_confirmation_keyboard,
     get_perform_check_edit_keyboard,
-    get_shift_buttons,
+    get_shift_in_buttons,
+    get_shift_out_buttons,
     get_start_shift_confirmation_keyboard,
     get_start_shift_edit_keyboard,
     get_trading_points,
@@ -327,7 +328,7 @@ async def process_confirm_start_shift(callback: CallbackQuery, state: FSMContext
                 is_display_ok=data["is_display_ok"],
                 is_wet_cleaning_not_required=data["is_wet_cleaning_not_required"],
             )
-            msg = await callback.message.answer("Смена начата!", reply_markup=get_shift_buttons())
+            msg = await callback.message.edit_text("Смена начата!", reply_markup=get_shift_out_buttons())
             shift.break_message_id = msg.message_id
             db.commit()
             send_to_airtable("shift_start", {
@@ -412,7 +413,7 @@ async def process_shift_buttons(callback: CallbackQuery):
                 return await callback.message.answer("Вы уже на перерыве.")
             sh.break_start_at = datetime.utcnow()
             db.commit()
-            await callback.message.answer("Перерыв начат.")
+            await callback.message.edit_text("Перерыв начат.", reply_markup=get_shift_in_buttons())
         elif action == "Пришел":
             if not sh.break_start_at:
                 return await callback.message.answer("Перерыв не начат.")
@@ -420,7 +421,7 @@ async def process_shift_buttons(callback: CallbackQuery):
             sh.total_break_minutes += dur
             sh.break_start_at = None
             db.commit()
-            await callback.message.answer(f"Перерыв окончен. Длительность: {dur} мин.")
+            await callback.message.edit_text(f"Перерыв окончен. Длительность: {dur} мин.", reply_markup=get_shift_out_buttons())
     await callback.answer()
 
 # Завершение смены через команду

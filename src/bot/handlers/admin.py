@@ -162,7 +162,7 @@ async def process_confirmation(callback: CallbackQuery, state: FSMContext):
                 "role": emp.role,
                 "hired_at": emp.hired_at and emp.hired_at.isoformat()
             })
-        await callback.message.edit_text(f"Сотрудник {emp.full_name} нанят как {emp.role}!", reply_markup=get_main_menu(callback.message))
+        await callback.message.edit_text(f"Сотрудник {emp.full_name} нанят как {'сотрудник' if emp.role == 'manager' else 'старший сотрудник'}!", reply_markup=get_main_menu(callback.message))
         await state.clear()
     
     elif action == "edit":

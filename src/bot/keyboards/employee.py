@@ -24,16 +24,23 @@ def get_senior_manager_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Выполнить проверку", callback_data="action:perform_check")],
     ])
 
-def get_shift_buttons() -> InlineKeyboardMarkup:
+def get_shift_out_buttons() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="Отошел", callback_data="shift:Отошел"),
-            InlineKeyboardButton(text="Пришел", callback_data="shift:Пришел")
         ],
         [
             InlineKeyboardButton(text="Завершить смену", callback_data="action:end_shift")
         ]
     ])
+
+def get_shift_in_buttons() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="Пришел", callback_data="shift:Пришел"),
+        ]
+    ])
+    
 
 def get_trading_points() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
