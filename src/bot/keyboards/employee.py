@@ -139,17 +139,23 @@ def get_end_shift_confirmation_keyboard() -> InlineKeyboardMarkup:
 
 def get_end_shift_edit_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Приход наличных", callback_data="edit_end_shift:cash_income")],
-        [InlineKeyboardButton(text="Безналичный доход", callback_data="edit_end_shift:cashless_income")],
-        [InlineKeyboardButton(text="Расходы", callback_data="edit_end_shift:expenses")],
-        [InlineKeyboardButton(text="Подписки", callback_data="edit_end_shift:subscriptions")],
+        [InlineKeyboardButton(text="Приход всего", callback_data="edit_end_shift:total_income")],
+        [InlineKeyboardButton(text="Наличные", callback_data="edit_end_shift:cash_income")],
+        [InlineKeyboardButton(text="Безналичные", callback_data="edit_end_shift:cashless_income")],
+        [InlineKeyboardButton(text="QR-оплаты", callback_data="edit_end_shift:qr_payments")],
+        [InlineKeyboardButton(text="Возвраты", callback_data="edit_end_shift:returns")],
+        [InlineKeyboardButton(text="Остаток наличных", callback_data="edit_end_shift:cash_balance")],
+        [InlineKeyboardButton(text="В счёт ЗП", callback_data="edit_end_shift:salary_advance")],
+        [InlineKeyboardButton(text="Инкассация (да/нет)", callback_data="edit_end_shift:incassation_decision")],
+        [InlineKeyboardButton(text="Сумма инкассации", callback_data="edit_end_shift:incassation_amount")],
+        [InlineKeyboardButton(text="Логистика", callback_data="edit_end_shift:logistics_expenses")],
+        [InlineKeyboardButton(text="Хоз. нужды", callback_data="edit_end_shift:household_expenses")],
+        [InlineKeyboardButton(text="Иные расходы", callback_data="edit_end_shift:other_expenses")],
+        [InlineKeyboardButton(text="Онлайн-доставка", callback_data="edit_end_shift:online_delivery")],
         [InlineKeyboardButton(text="Карты лояльности", callback_data="edit_end_shift:loyalty_cards_issued")],
-        [InlineKeyboardButton(text="Инкассация", callback_data="edit_end_shift:incassation")],
-        [InlineKeyboardButton(text="QR", callback_data="edit_end_shift:qr")],
-        [InlineKeyboardButton(text="Доставка", callback_data="edit_end_shift:delivery")],
-        [InlineKeyboardButton(text="Онлайн-заказы", callback_data="edit_end_shift:online_orders")],
-        [InlineKeyboardButton(text="Брак", callback_data="edit_end_shift:defect")],
-        [InlineKeyboardButton(text="Комментарий", callback_data="edit_end_shift:close_comment")],
+        [InlineKeyboardButton(text="Подписки", callback_data="edit_end_shift:subscriptions")],
+        [InlineKeyboardButton(text="Неисправности", callback_data="edit_end_shift:malfunctions")],
+        [InlineKeyboardButton(text="Запрашиваемый товар", callback_data="edit_end_shift:requested_products")],
         [InlineKeyboardButton(text="Фото", callback_data="edit_end_shift:photo_end")],
         [InlineKeyboardButton(text="Подтвердить данные", callback_data="edit_end_shift:confirm")]
     ])

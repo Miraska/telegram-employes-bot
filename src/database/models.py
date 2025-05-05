@@ -41,35 +41,35 @@ class Shift(Base):
     end_time = Column(DateTime)
     trading_point = Column(String)
     cash_start = Column(Integer)
-    cash_income = Column(Integer)
-    cashless_income = Column(Integer)
-    total = Column(Integer)
-    expenses = Column(String)
-    balance = Column(Integer)
     photo_url_start = Column(String)
-    photo_url_end = Column(String)
+    is_light_on = Column(Boolean)
+    is_camera_on = Column(Boolean)
+    is_display_ok = Column(Boolean)
+    is_wet_cleaning_not_required = Column(Boolean)
+    open_comment = Column(String)
     break_start_at = Column(DateTime)
     total_break_minutes = Column(Integer, default=0)
-
-    # Дополнительные поля для открытия смены (скрин с зелеными галочками)
-    is_light_on = Column(Boolean, default=False)               # Подсветка включена
-    is_camera_on = Column(Boolean, default=False)              # Камера подключена
-    is_display_ok = Column(Boolean, default=False)             # Выкладка в норме
-    is_wet_cleaning_not_required = Column(Boolean, default=False)  # Влажная уборка не требуется
-    open_comment = Column(String)                              # Комментарий при открытии
-
-    # Дополнительные поля для закрытия смены
-    subscriptions = Column(String)      # Подписки
-    loyalty_cards_issued = Column(String)  # Выдано карт лояльности
-    incassation = Column(String)          # Инкассация
-    qr = Column(String)                   # QR
-    delivery = Column(String)             # Доставка
-    online_orders = Column(String)        # Онлайн заказы
-    defect = Column(String)               # Брак
-    close_comment = Column(String)        # Комментарий при закрытии
-
-
     break_message_id = Column(Integer)
+
+    # Поля для закрытия смены
+    total_income = Column(Integer)          # Приход всего
+    cash_income = Column(Integer)           # Наличные
+    cashless_income = Column(Integer)       # Безналичные
+    qr_payments = Column(Integer)           # QR-оплаты
+    returns = Column(Integer)               # Возвраты
+    cash_balance = Column(Integer)          # Остаток наличных в кассе
+    salary_advance = Column(Integer)        # В счёт ЗП
+    incassation_decision = Column(Boolean)  # Была ли инкассация
+    incassation_amount = Column(Integer)    # Сумма инкассации
+    logistics_expenses = Column(Integer)    # Расходы: Логистика
+    household_expenses = Column(Integer)    # Расходы: Хозяйственные нужды
+    other_expenses = Column(Integer)        # Расходы: Иные
+    online_delivery = Column(Integer)       # Онлайн-доставка
+    loyalty_cards_issued = Column(Integer)  # Выдано карт лояльности
+    subscriptions = Column(Integer)         # Подписки
+    malfunctions = Column(String)           # Неисправности / поломки
+    requested_products = Column(String)     # Необходимый товар
+    photo_url_end = Column(String)          # Фото конца смены
 
 def init_db():
     engine = create_engine(settings_config.DATABASE_URL)
